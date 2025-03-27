@@ -1,4 +1,4 @@
-import mangoose,{Schema} from "mangoose";
+import mongoose,{Schema} from "mongoose";
 
 const ratingSchema=new Schema({
     rating:{
@@ -7,7 +7,7 @@ const ratingSchema=new Schema({
     },
     rater:{
         type:Schema.Types.ObjectId,
-        ref:true
+        ref:"User"
     },
     description:{
         type:String,
@@ -19,4 +19,4 @@ const ratingSchema=new Schema({
     }
 },{timestamps:true});
 
-export const Rating=mangoose.model("Rating",ratingSchema);
+export const Rating=mongoose.model("Rating",ratingSchema);
