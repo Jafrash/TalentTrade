@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { googleAuthCallBack,googleAuthHandler,handleGoogleLoginCallBack,handleLogout } from "../controllers/auth.controllers";
+import { googleAuthCallBack,googleAuthHandler,handleGoogleLoginCallBack,handleLogout } from "../controllers/auth.controllers.js";
 
 const router=Router();
 router.get("/google",googleAuthHandler);

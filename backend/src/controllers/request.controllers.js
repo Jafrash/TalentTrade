@@ -4,7 +4,6 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { User } from "../models/user.model.js";
 import { Chat } from "../models/chat.model.js";
 import { UnRegisteredUser } from "../models/unRegisteredUser.model.js";
-import {generateJWTToken_username} from "../utils/generateJWTtoken.js";
 import {Request} from "../models/request.model.js";
 
 export const createRequest = asyncHandler(async (req,res,next)=>{

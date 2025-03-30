@@ -1,4 +1,4 @@
-import { generateJWTToken_email, generateJWTToken_username } from "../utils/generateJWTtoken.js";
+import { generateJWTToken_email, generateJWTToken_username } from "../utils/generateJWTtoken.js"
 import passport from "passport";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { User } from "../models/user.model.js";
@@ -27,12 +27,12 @@ export const googleAuthHandler = passport.authenticate("google", {
   scope: ["profile", "email"],
 });
 
-export const googleAuthCallback = passport.authenticate("google", {
+export const googleAuthCallBack = passport.authenticate("google", {
   failureRedirect: "http://localhost:5173/login",
   session: false,
 });
 
-export const handleGoogleLoginCallback = asyncHandler(async (req, res) => {
+export const handleGoogleLoginCallBack = asyncHandler(async (req, res) => {
   console.log("\n******** Inside handleGoogleLoginCallback function ********");
   // console.log("User Google Info", req.user);
 

@@ -1,4 +1,4 @@
-import { createReport } from "../controllers/report.controllers";
+import { createReport } from "../controllers/report.controllers.js";
 import {verifyJWT_username} from "../middlewares/verifyJWT.middleware.js";
 import express from "express";
 
