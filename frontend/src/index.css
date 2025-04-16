@@ -1,6 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+body {
+  font-family: 'Inter', sans-serif;
+  @apply bg-[#2D2D2D] text-white;
+}
+
+.gradient-text {
+  background: linear-gradient(45deg, #3BB4A1, #028477);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 @layer base {
   :root {
