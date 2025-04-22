@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useUser } from "../../util/userContext.jsx";
 import axios from "axios";
 import { toast } from "react-toastify";
+import { Search as SearchIcon, Sparkles, Code, Brain, Users, Loader2 } from "lucide-react";
 
 import {
   Card,
@@ -18,9 +19,9 @@ import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
-// Profile Card Component
+// Enhanced Profile Card Component
 const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) => {
   const navigate = useNavigate();
   
@@ -38,17 +39,19 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
   };
 
   return (
-    <Card className="w-full max-w-sm transition-all duration-300 hover:shadow-lg">
-      <CardHeader className="flex flex-row items-center gap-4">
-        <Avatar className="h-12 w-12">
+    <Card className="w-full max-w-sm transition-all duration-300 hover:shadow-lg hover:scale-105 bg-gradient-to-br from-green-50 to-white dark:from-gray-800 dark:to-green-950 border-none">
+      <CardHeader className="flex flex-row items-center gap-4 pb-2">
+        <Avatar className="h-14 w-14 ring-2 ring-green-300 dark:ring-green-600">
           {profileImageUrl ? (
             <AvatarImage src={profileImageUrl} alt={name} />
           ) : (
-            <AvatarFallback>{getInitials(name)}</AvatarFallback>
+            <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white font-medium">
+              {getInitials(name)}
+            </AvatarFallback>
           )}
         </Avatar>
         <div className="flex flex-col">
-          <CardTitle className="text-lg">{name}</CardTitle>
+          <CardTitle className="text-lg font-bold text-green-900 dark:text-green-300">{name}</CardTitle>
           <div className="flex items-center mt-1">
             {Array(rating)
               .fill()
@@ -59,7 +62,7 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
-                  fill="gold"
+                  fill="#10B981"
                   className="mr-1"
                 >
                   <path d="M12 2l2.4 7.4h7.6l-6 4.6 2.3 7-6.3-4.6-6.3 4.6 2.3-7-6-4.6h7.6z" />
@@ -69,15 +72,15 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
         </div>
       </CardHeader>
       <CardContent>
-        <p className="text-sm text-muted-foreground mb-4">{bio}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 line-clamp-3">{bio}</p>
         <div className="flex flex-wrap gap-2">
           {skills && skills.slice(0, 4).map((skill, index) => (
-            <Badge key={index} variant="secondary" className="text-xs">
+            <Badge key={index} variant="secondary" className="text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-200">
               {skill}
             </Badge>
           ))}
           {skills && skills.length > 4 && (
-            <Badge variant="outline" className="text-xs">
+            <Badge variant="outline" className="text-xs border-green-200 text-green-600 dark:border-green-700 dark:text-green-300">
               +{skills.length - 4} more
             </Badge>
           )}
@@ -85,14 +88,45 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
       </CardContent>
       <CardFooter>
         <Button 
-          variant="outline" 
-          className="w-full" 
+          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 shadow-md hover:shadow-lg"
           onClick={handleProfileClick}
         >
           View Profile
         </Button>
       </CardFooter>
     </Card>
+  );
+};
+
+// Enhanced Search Component
+const Search = () => {
+  const [isActive, setIsActive] = useState(false);
+  
+  const handleFocus = () => {
+    setIsActive(true);
+  };
+  
+  const handleBlur = () => {
+    setIsActive(false);
+  };
+  
+  return (
+    <div className={`relative flex items-center bg-white dark:bg-gray-800 rounded-full px-4 py-2 mb-8 transition-all duration-300 shadow-md ${
+      isActive ? "shadow-lg ring-2 ring-green-300 dark:ring-green-600" : ""
+    } max-w-2xl mx-auto`}>
+      <SearchIcon 
+        className={`w-5 h-5 mr-2 ${
+          isActive ? "text-green-600 dark:text-green-400" : "text-gray-400"
+        }`}
+      />
+      <Input
+        type="text"
+        placeholder="Search for skills, expertise or users..."
+        onFocus={handleFocus}
+        onBlur={handleBlur}
+        className="flex-1 border-none bg-transparent shadow-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
+      />
+    </div>
   );
 };
 
@@ -167,14 +201,16 @@ const Discover = () => {
   const renderUserCards = (users) => {
     if (!users || users.length === 0) {
       return (
-        <div className="flex justify-center items-center h-40">
-          <p className="text-muted-foreground">No users to show</p>
+        <div className="flex flex-col justify-center items-center h-60 bg-gradient-to-br from-gray-50 to-green-50 dark:from-gray-900 dark:to-green-950 rounded-lg p-8">
+          <Users className="h-12 w-12 text-green-300 mb-4" />
+          <p className="text-gray-500 dark:text-gray-400 text-center">No users to show yet</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm text-center mt-2">Check back later or try another category</p>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {users.map((user, index) => (
           <ProfileCard
             key={index}
@@ -192,94 +228,151 @@ const Discover = () => {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-screen">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex flex-col justify-center items-center h-screen bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
+        <Loader2 className="h-12 w-12 animate-spin text-green-600 dark:text-green-400 mb-4" />
+        <p className="text-green-600 dark:text-green-400 font-medium">Discovering talent for you...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-b from-gray-100 to-gray-50 dark:from-gray-900 dark:to-gray-800">
+    <div className="flex min-h-screen w-full bg-gradient-to-b from-green-50 to-white dark:from-gray-900 dark:to-gray-800 overflow-hidden">
       {/* Sidebar navigation */}
-      <div className="hidden md:block w-64 border-r dark:border-gray-700 p-4">
+      <div className="hidden md:block w-56 border-r border-green-100 dark:border-gray-700 p-4 bg-white dark:bg-gray-900 shadow-md">
         <div className="sticky top-20">
-          <h3 className="text-lg font-medium mb-4">Categories</h3>
+          <h3 className="text-xl font-bold mb-6 text-green-700 dark:text-green-400 pl-2">Discover</h3>
           <div className="space-y-1">
             <Button 
               variant={activeTab === "for-you" ? "secondary" : "ghost"} 
-              className="w-full justify-start"
+              className={`w-full justify-start text-left pl-4 ${activeTab === "for-you" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "text-gray-700 dark:text-gray-300"}`}
               onClick={() => handleTabChange("for-you")}
             >
+              <Sparkles className="h-4 w-4 mr-2" />
               For You
             </Button>
             <Button 
               variant={activeTab === "popular" ? "secondary" : "ghost"} 
-              className="w-full justify-start"
+              className={`w-full justify-start text-left pl-4 ${activeTab === "popular" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "text-gray-700 dark:text-gray-300"}`}
               onClick={() => handleTabChange("popular")}
             >
+              <Users className="h-4 w-4 mr-2" />
               Popular
             </Button>
             <Button 
               variant={activeTab === "web-development" ? "secondary" : "ghost"} 
-              className="w-full justify-start"
+              className={`w-full justify-start text-left pl-4 ${activeTab === "web-development" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "text-gray-700 dark:text-gray-300"}`}
               onClick={() => handleTabChange("web-development")}
             >
+              <Code className="h-4 w-4 mr-2" />
               Web Development
             </Button>
             <Button 
               variant={activeTab === "machine-learning" ? "secondary" : "ghost"} 
-              className="w-full justify-start"
+              className={`w-full justify-start text-left pl-4 ${activeTab === "machine-learning" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "text-gray-700 dark:text-gray-300"}`}
               onClick={() => handleTabChange("machine-learning")}
             >
+              <Brain className="h-4 w-4 mr-2" />
               Machine Learning
             </Button>
             <Button 
               variant={activeTab === "others" ? "secondary" : "ghost"} 
-              className="w-full justify-start"
+              className={`w-full justify-start text-left pl-4 ${activeTab === "others" ? "bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300" : "text-gray-700 dark:text-gray-300"}`}
               onClick={() => handleTabChange("others")}
             >
+              <Users className="h-4 w-4 mr-2" />
               Others
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Mobile tabs (visible on small screens) */}
-      <div className="md:hidden w-full p-4">
-        <Tabs defaultValue="for-you" onValueChange={handleTabChange}>
-          <TabsList className="w-full">
-            <TabsTrigger value="for-you" className="flex-1">For You</TabsTrigger>
-            <TabsTrigger value="popular" className="flex-1">Popular</TabsTrigger>
-            <TabsTrigger value="web-development" className="flex-1">Web Dev</TabsTrigger>
-            <TabsTrigger value="machine-learning" className="flex-1">ML</TabsTrigger>
-            <TabsTrigger value="others" className="flex-1">Others</TabsTrigger>
-          </TabsList>
-        </Tabs>
-      </div>
-
       {/* Main content */}
-      <ScrollArea className="flex-1 p-4 md:p-8">
-        <div className="max-w-6xl mx-auto">
-          <section id="for-you" className="py-6">
-            <h1 className="text-3xl font-bold mb-6 text-primary">For You</h1>
-            {renderUserCards(userData.forYou)}
-          </section>
-          
-          <Separator className="my-8" />
-
-          <section id="popular" className="py-6">
-            <h1 className="text-3xl font-bold mb-6 text-primary">Popular</h1>
-            <h2 id="web-development" className="text-2xl font-semibold mb-4">Web Development</h2>
-            {renderUserCards(userData.webDev)}
-            
-            <h2 id="machine-learning" className="text-2xl font-semibold mt-10 mb-4">Machine Learning</h2>
-            {renderUserCards(userData.ml)}
-            
-            <h2 id="others" className="text-2xl font-semibold mt-10 mb-4">Others</h2>
-            {renderUserCards(userData.others)}
-          </section>
+      <div className="flex-1 overflow-auto">
+        {/* Mobile tabs (visible on small screens) */}
+        <div className="md:hidden w-full p-4 bg-white dark:bg-gray-900 shadow-md">
+          <Tabs defaultValue="for-you" onValueChange={handleTabChange} className="w-full">
+            <TabsList className="w-full bg-green-50 dark:bg-gray-800 p-1">
+              <TabsTrigger 
+                value="for-you" 
+                className="flex-1 data-[state=active]:bg-green-500 data-[state=active]:text-white dark:data-[state=active]:bg-green-700"
+              >
+                <Sparkles className="h-4 w-4 mr-1" />
+                For You
+              </TabsTrigger>
+              <TabsTrigger 
+                value="popular" 
+                className="flex-1 data-[state=active]:bg-green-500 data-[state=active]:text-white dark:data-[state=active]:bg-green-700"
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Popular
+              </TabsTrigger>
+              <TabsTrigger 
+                value="web-development" 
+                className="flex-1 data-[state=active]:bg-green-500 data-[state=active]:text-white dark:data-[state=active]:bg-green-700"
+              >
+                <Code className="h-4 w-4 mr-1" />
+                Web
+              </TabsTrigger>
+              <TabsTrigger 
+                value="machine-learning" 
+                className="flex-1 data-[state=active]:bg-green-500 data-[state=active]:text-white dark:data-[state=active]:bg-green-700"
+              >
+                <Brain className="h-4 w-4 mr-1" />
+                ML
+              </TabsTrigger>
+              <TabsTrigger 
+                value="others" 
+                className="flex-1 data-[state=active]:bg-green-500 data-[state=active]:text-white dark:data-[state=active]:bg-green-700"
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Others
+              </TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
-      </ScrollArea>
+
+        <div className="p-4 md:p-6 h-full">
+          <div className="max-w-6xl mx-auto">
+            {/* Search component */}
+            <Search />
+            
+            <section id="for-you" className="py-4">
+              <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
+                <Sparkles className="h-6 w-6 mr-2" />
+                For You
+              </h1>
+              {renderUserCards(userData.forYou)}
+            </section>
+            
+            <Separator className="my-8 bg-green-100 dark:bg-gray-700" />
+
+            <section id="popular" className="py-4">
+              <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
+                <Users className="h-6 w-6 mr-2" />
+                Popular
+              </h1>
+              
+              <h2 id="web-development" className="text-xl font-semibold mb-4 text-green-600 dark:text-green-300 flex items-center">
+                <Code className="h-5 w-5 mr-2" />
+                Web Development
+              </h2>
+              {renderUserCards(userData.webDev)}
+              
+              <h2 id="machine-learning" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
+                <Brain className="h-5 w-5 mr-2" />
+                Machine Learning
+              </h2>
+              {renderUserCards(userData.ml)}
+              
+              <h2 id="others" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
+                <Users className="h-5 w-5 mr-2" />
+                Others
+              </h2>
+              {renderUserCards(userData.others)}
+            </section>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

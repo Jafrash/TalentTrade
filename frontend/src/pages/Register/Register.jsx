@@ -4,7 +4,7 @@ import { X, ChevronRight, Plus, Trash2, Save, Check, AlertCircle } from "lucide-
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { skills } from "./Skills";
-
+import { toast } from "react-toastify";
 const Register = () => {
   const [loading, setLoading] = useState(true);
   const [saveLoading, setSaveLoading] = useState(false);
@@ -338,10 +338,11 @@ const Register = () => {
     setSaveLoading(true);
     try {
       await axios.post("/user/registerUser", form);
-      toast.success("Registration successful!");
+      toast.success("Registration successful!"); 
       navigate("/discover");
     } catch (error) {
       console.error(error);
+      console.log(error?.response?.data?.message)
       toast.error(error?.response?.data?.message || "Registration failed");
     } finally {
       setSaveLoading(false);
@@ -352,6 +353,8 @@ const Register = () => {
     return (
       <div className="min-h-screen bg-[#2D2D2D] flex items-center justify-center">
         <motion.div
+
+        
           animate={{
             rotate: 360,
           }}

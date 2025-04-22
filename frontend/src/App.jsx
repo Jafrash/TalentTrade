@@ -12,6 +12,7 @@ import { Route, Routes } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage.jsx';
 import Register from './pages/Register/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
+import Profile from './pages/Profile/Profile';
 function App() {
   
 
@@ -26,6 +27,7 @@ function App() {
          <Route path="/login" element={<Login />} />
          <Route path="/register" element={<Register />} />
          <Route path="*" element={<NotFound />} />
+         <Route path="/profile/:username" element={<Profile/>}/>
        </Routes>
         <Footer/>
     </UserProvider>
