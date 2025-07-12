@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
+import bcrypt from "bcryptjs";
 
 dotenv.config();
 
@@ -42,17 +43,17 @@ export const handleGoogleLoginCallBack = asyncHandler(async (req, res) => {
     const jwtToken = generateJWTToken_username(existingUser);
     const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
     res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
-    return res.redirect(`http://localhost:5173/discover`);
+    return res.redirect(`http://localhost:5173/`);
   }
 
   let unregisteredUser = await UnRegisteredUser.findOne({ email: req.user._json.email });
   if (!unregisteredUser) {
-    console.log("Creating new Unregistered User");
-    unregisteredUser = await UnRegisteredUser.create({
-      name: req.user._json.name,
+    unregisteredUser = new UnRegisteredUser({
       email: req.user._json.email,
-      picture: req.user._json.picture,
+      name: req.user._json.name,
+      picture: req.user._json.picture
     });
+    await unregisteredUser.save();
   }
   const jwtToken = generateJWTToken_email(unregisteredUser);
   const expiryDate = new Date(Date.now() + 0.5 * 60 * 60 * 1000);
@@ -65,3 +66,116 @@ export const handleLogout = (req, res) => {
   res.clearCookie("accessToken");
   return res.status(200).json(new ApiResponse(200, null, "User logged out successfully"));
 };
+
+export const manualLogin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json(new ApiResponse(400, null, "Email and password are required"));
+  }
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
+  }
+
+  const jwtToken = generateJWTToken_username(user);
+  const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
+  res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
+
+  return res.status(200).json(new ApiResponse(200, user, "Login successful"));
+});
+
+export const refreshToken = asyncHandler(async (req, res) => {
+  // Get the token from cookies
+  const token = req.cookies.accessToken;
+  
+  if (!token) {
+    console.log("No access token found in cookies");
+    // Instead of returning 401, redirect to login
+    res.clearCookie('accessToken');
+    return res.redirect('http://localhost:5173/login');
+  }
+
+  try {
+    console.log("Attempting to verify token");
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Find user by ID from decoded token
+    const user = await User.findById(decoded.userId);
+    if (!user) {
+      console.log("User not found");
+      // Instead of returning 401, redirect to login
+      res.clearCookie('accessToken');
+      return res.redirect('http://localhost:5173/login');
+    }
+
+    // Generate new token
+    const newToken = generateJWTToken_username(user);
+    const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
+    
+    // Set new token in cookie
+    res.cookie("accessToken", newToken, {
+      httpOnly: true,
+      expires: expiryDate,
+      secure: false
+    });
+    
+    // Return success response
+    return res.status(200).json(new ApiResponse(200, {
+      success: true,
+      data: {
+        token: newToken
+      }
+    }, "Token refreshed successfully"));
+  } catch (error) {
+    return res.status(401).json(new ApiResponse(401, null, "Invalid token"));
+  }
+});
+
+export const register = asyncHandler(async (req, res) => {
+  const { name, email, password, username } = req.body;
+
+  if (!name || !email || !password || !username) {
+    return res.status(400).json(new ApiResponse(400, null, "All fields are required"));
+  }
+
+  // Check if user already exists
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    return res.status(400).json(new ApiResponse(400, null, "User already exists"));
+  }
+
+  // Hash password
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  // Create new user
+  const user = await User.create({
+    name,
+    email,
+    password: hashedPassword,
+    username,
+    picture: "https://via.placeholder.com/150"
+  });
+
+  // Generate token
+  const jwtToken = generateJWTToken_username(user);
+  const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
+  res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
+
+  // Return user data without password
+  const userData = {
+    _id: user._id,
+    name: user.name,
+    email: user.email,
+    username: user.username,
+    picture: user.picture
+  };
+
+  return res.status(201).json(new ApiResponse(201, userData, "Registration successful"));
+});
