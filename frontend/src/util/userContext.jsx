@@ -13,7 +13,7 @@ const UserContextProvider = ({ children }) => {
     try {
       // Clear user data from localStorage
       localStorage.removeItem('userInfo');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('accessTokenRegistration');
       
       // Clear user state
@@ -32,7 +32,7 @@ const UserContextProvider = ({ children }) => {
       console.error('Logout failed:', error);
       // Still clear local state even if API call fails
       localStorage.removeItem('userInfo');
-      localStorage.removeItem('token');
+      localStorage.removeItem('accessToken');
       localStorage.removeItem('accessTokenRegistration');
       setUser(null);
       navigate('/login');
@@ -40,55 +40,40 @@ const UserContextProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // First check if we have an access token
-    const token = localStorage.getItem('token');
-    if (token) {
-      // If we have a token, set user from localStorage
-      const userInfoString = localStorage.getItem("userInfo");
-      if (userInfoString) {
-        try {
-          const userInfo = JSON.parse(userInfoString);
-          setUser(userInfo);
-        } catch (error) {
-          console.error("Error parsing userInfo:", error);
-          localStorage.removeItem('userInfo');
-          localStorage.removeItem('token');
-          // Don't redirect immediately, let the component handle it
-        }
+    // Only rely on localStorage for user info
+    const userInfoString = localStorage.getItem("userInfo");
+    if (userInfoString) {
+      try {
+        const userInfo = JSON.parse(userInfoString);
+        setUser(userInfo);
+      } catch (error) {
+        console.error('Error parsing user info:', error);
+        localStorage.removeItem('userInfo');
+        setUser(null);
+        navigate('/login');
       }
     } else {
-      // If no token, clear any stale user data
-      localStorage.removeItem('userInfo');
       setUser(null);
     }
 
-    // Handle URL changes
-    const handleUrlChange = () => {
-      console.log("URL has changed:", window.location.href);
-      // Check if we need to redirect based on current path and login state
-      const currentPath = window.location.pathname;
-      const protectedRoutes = ['/profile', '/chat', '/discover'];
-      
-      // Check if current path matches any protected route pattern
-      const isProtectedRoute = protectedRoutes.some(route => {
-        // Check for exact match or profile with username
-        return currentPath === route || currentPath.startsWith(route + '/');
-      });
-      
-      if (!user && isProtectedRoute) {
-        // Only redirect if we're not in the login flow
-        if (!currentPath.includes('/login')) {
-          navigate("/login");
+    // Listen for storage changes (e.g., login/logout in another tab)
+    const handleStorageChange = () => {
+      const updatedUserInfo = localStorage.getItem("userInfo");
+      if (updatedUserInfo) {
+        try {
+          setUser(JSON.parse(updatedUserInfo));
+        } catch {
+          setUser(null);
         }
+      } else {
+        setUser(null);
       }
     };
-
-    window.addEventListener("popstate", handleUrlChange);
-
+    window.addEventListener('storage', handleStorageChange);
     return () => {
-      window.removeEventListener("popstate", handleUrlChange);
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, [user, navigate]);
+  }, [navigate]);
 
   // Skip token refresh on initial mount
   useEffect(() => {
@@ -141,7 +126,7 @@ const UserContextProvider = ({ children }) => {
   }, [user, navigate, isInitialMount]);
 
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, logout }}>
       {children}
     </UserContext.Provider>
   );

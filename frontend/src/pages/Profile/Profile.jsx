@@ -83,7 +83,7 @@ const Profile = () => {
       setConnectLoading(true);
       const { data } = await axios.post(`/request/create`, {
         receiverID: profileUser._id,
-      });
+      }, { withCredentials: true });
 
       console.log(data);
       toast.success(data.message);

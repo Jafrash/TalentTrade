@@ -147,24 +147,26 @@ const Discover = () => {
     const getUser = async () => {
       try {
         setLoading(true);
-        const { data } = await axios.get(`/user/registered/getDetails`);
+        const { data } = await axios.get(`/user/registered/getDetails`, { withCredentials: true });
         setUser(data.data);
         localStorage.setItem("userInfo", JSON.stringify(data.data));
       } catch (error) {
         console.log(error);
-        if (error?.response?.data?.message) {
+        if (error?.response?.status === 401 || error?.response?.data?.message === "Please Login") {
           toast.error(error.response.data.message);
+          localStorage.removeItem("userInfo");
+          setUser(null);
+          await axios.get("/auth/logout");
+          navigate("/login");
+        } else {
+          toast.error(error.response?.data?.message || "Failed to fetch user details");
         }
-        localStorage.removeItem("userInfo");
-        setUser(null);
-        await axios.get("/auth/logout");
-        navigate("/login");
       }
     };
 
     const getDiscoverUsers = async () => {
       try {
-        const { data } = await axios.get("/user/discover");
+        const { data } = await axios.get("/user/discover", { withCredentials: true });
         setUserData({
           forYou: data.data.forYou || [],
           webDev: data.data.webDev || [],
@@ -173,13 +175,15 @@ const Discover = () => {
         });
       } catch (error) {
         console.log(error);
-        if (error?.response?.data?.message) {
+        if (error?.response?.status === 401 || error?.response?.data?.message === "Please Login") {
           toast.error(error.response.data.message);
+          localStorage.removeItem("userInfo");
+          setUser(null);
+          await axios.get("/auth/logout");
+          navigate("/login");
+        } else {
+          toast.error(error.response?.data?.message || "Failed to fetch discover users");
         }
-        localStorage.removeItem("userInfo");
-        setUser(null);
-        await axios.get("/auth/logout");
-        navigate("/login");
       } finally {
         setLoading(false);
       }

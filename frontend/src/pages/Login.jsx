@@ -26,13 +26,12 @@ const Login = () => {
     const password = e.target.password.value;
 
     try {
-      const response = await api.post("/auth/login", { email, password });
+      const response = await api.post("/auth/login", { email, password }, { withCredentials: true });
       if (response.data.success) {
         // Update user context
         setUser(response.data.data);
         localStorage.setItem("userInfo", JSON.stringify(response.data.data));
-        // No need to set token in localStorage since it's handled via cookies
-        
+        // Do NOT try to set cookies manually!
         // Redirect to home
         navigate("/");
       } else {

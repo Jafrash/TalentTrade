@@ -4,7 +4,7 @@ import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
 import { UnRegisteredUser } from "../models/unRegisteredUser.model.js";
 import { generateJWTToken_username } from "../utils/generateJWTtoken.js";
-import { Message } from "../models/message.model.js";
+import { Message } from "../models/chat.model.js";
 import { Chat } from "../models/chat.model.js";
 
 export const sendMessage=asyncHandler(async (req,res)=>{

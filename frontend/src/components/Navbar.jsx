@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useUser } from "../util/userContext";
+import api from "../utils/axiosInstance";
 import {
   Dialog,
   DialogContent,
@@ -23,8 +24,11 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { useNavigate } from "react-router-dom";
 
-const UserProfileDropdown = ({ user, onLogout, onNavigate }) => {
+const UserProfileDropdown = ({ user }) => {
+  const navigate = useNavigate();
+  const { logout } = useUser();
   const getInitials = (name) => {
     if (!name) return "U";
     return name.split(" ")
@@ -35,17 +39,7 @@ const UserProfileDropdown = ({ user, onLogout, onNavigate }) => {
   };
 
   const handleLogout = async () => {
-    localStorage.removeItem("userInfo");
-    
-    try {
-      const response = await fetch("/auth/logout");
-      if (response.ok) {
-        onLogout();
-        window.location.href = "http://localhost:5173/login";
-      }
-    } catch (error) {
-      console.error("Logout failed:", error);
-    }
+    await logout();
   };
 
   return (
@@ -63,7 +57,7 @@ const UserProfileDropdown = ({ user, onLogout, onNavigate }) => {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-48">
         <DropdownMenuItem 
-          onClick={() => onNavigate(`/profile/${user.username}`)}
+          onClick={() => navigate(`/profile/${user.username}`)}
           className="cursor-pointer py-2 flex items-center"
         >
           <User className="mr-2 h-4 w-4" />
@@ -91,18 +85,26 @@ const NavbarLink = ({ href, children, color = "text-gray-800", className = "", o
   </Button>
 );
 
-const Header = ({ onNavigate }) => {
-  const [navUser, setNavUser] = useState(null);
+const Header = () => {
   const [discover, setDiscover] = useState(false);
-  const { user, logout } = useUser();
+  const { user } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const navigate = useNavigate();
+
+  const handleChatClick = () => {
+    if (user) {
+      navigate('/chats');
+    } else {
+      window.location.href = '/login';
+    }
+  };
 
   const handleLogout = () => {
     setShowLogoutDialog(true);
   };
 
   const handleLogoutConfirm = () => {
-    logout();
+    // The logout function is now handled by useUser context
     setShowLogoutDialog(false);
   };
 
@@ -110,24 +112,9 @@ const Header = ({ onNavigate }) => {
     setShowLogoutDialog(false);
   };
 
-  const navigate = (path) => {
-    if (onNavigate) {
-      onNavigate(path);
-    } else {
-      window.location.href = path;
-    }
+  const navigateTo = (path) => {
+    navigate(path);
   };
-
-  useEffect(() => {
-    const storedUser = localStorage.getItem("userInfo");
-    if (storedUser) {
-      try {
-        setNavUser(JSON.parse(storedUser));
-      } catch (e) {
-        console.error("Failed to parse user info");
-      }
-    }
-  }, []);
 
   useEffect(() => {
     const currentPath = window.location.pathname;
@@ -158,7 +145,7 @@ const Header = ({ onNavigate }) => {
         <div className="container mx-auto px-4 flex justify-between items-center">
           <Button 
             variant="ghost" 
-            onClick={() => navigate("/")}
+            onClick={() => navigateTo("/")}
             className="p-0 hover:bg-transparent"
           >
             <h1 className="text-xl font-semibold text-gray-800 tracking-wide">
@@ -172,38 +159,34 @@ const Header = ({ onNavigate }) => {
               Home
             </NavbarLink>
 
-            {user !== null ? (
+            {user ? (
               <>
                 <NavbarLink href="/profile/me">
                   <User className="mr-2 h-4 w-4" />
                   My Profile
                 </NavbarLink>
-                <NavbarLink href="/discover">
-                  <Compass className="mr-2 h-4 w-4" />
-                  Discover
-                </NavbarLink>
-                <NavbarLink href="/chats">
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Your Chats
-                </NavbarLink>
-                <NavbarLink href={`/profile/${user.username}`}>
-                  <User className="mr-2 h-4 w-4" />
-                  Profile
-                </NavbarLink>
-                <Button
-                  onClick={handleLogout}
-                  className="bg-white text-emerald-600 hover:bg-gray-100 ml-2 font-medium"
-                >
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
+                <div className="flex items-center gap-2">
+                  <NavbarLink href="/discover" color="text-emerald-600">
+                    <Compass className="mr-2 h-4 w-4" />
+                    Discover
+                  </NavbarLink>
+                  <NavbarLink 
+                    href="/chats" 
+                    onClick={handleChatClick}
+                    color="text-emerald-600"
+                  >
+                    <MessageSquare className="mr-2 h-4 w-4" />
+                    Chat
+                  </NavbarLink>
+                  <UserProfileDropdown user={user} />
+                </div>
               </>
             ) : (
               <>
                 <NavbarLink href="/about_us">About Us</NavbarLink>
-                <NavbarLink href="/" onClick={() => navigate("/#why-talent-trade")}>Why Talent Trade</NavbarLink>
+                <NavbarLink href="/" onClick={() => navigateTo("/#why-talent-trade")}>Why Talent Trade</NavbarLink>
                 <Button
-                  onClick={() => navigate("/login")}
+                  onClick={() => navigateTo("/login")}
                   className="bg-white text-emerald-600 hover:bg-gray-100 ml-2 font-medium"
                 >
                   Login/Register
@@ -230,101 +213,77 @@ const Header = ({ onNavigate }) => {
                     <Home className="mr-2 h-4 w-4" />
                     Home
                   </NavbarLink>
-                  
-                  {user !== null ? (
+                  {user ? (
                     <>
+                      <NavbarLink href="/profile/me" className="justify-start">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                      </NavbarLink>
                       <NavbarLink href="/discover" className="justify-start">
                         <Compass className="mr-2 h-4 w-4" />
                         Discover
                       </NavbarLink>
                       <NavbarLink href="/chats" className="justify-start">
                         <MessageSquare className="mr-2 h-4 w-4" />
-                        Your Chats
+                        Chat
                       </NavbarLink>
-
-                      {discover && (
-                        <>
-                          <Separator className="my-2" />
-                          <h3 className="px-3 text-sm font-medium text-gray-500">Discover Sections</h3>
-
-                          <NavbarLink
-                            href="#for-you"
-                            className="justify-start pl-4 text-rose-500 font-semibold"
-                          >
-                            For You
-                          </NavbarLink>
-                          <NavbarLink
-                            href="#popular"
-                            className="justify-start pl-4 text-emerald-600 font-semibold"
-                          >
-                            Popular
-                          </NavbarLink>
-                          <NavbarLink
-                            href="#web-development"
-                            className="justify-start pl-6 text-teal-800"
-                          >
-                            Web Development
-                          </NavbarLink>
-                          <NavbarLink
-                            href="#machine-learning"
-                            className="justify-start pl-6 text-teal-800"
-                          >
-                            Machine Learning
-                          </NavbarLink>
-                          <NavbarLink
-                            href="#others"
-                            className="justify-start pl-6 text-teal-800"
-                          >
-                            Others
-                          </NavbarLink>
-                        </>
-                      )}
-
                       <Separator className="my-2" />
-                      <div className="flex items-center gap-3 px-3 py-2">
-                        <Avatar className="h-10 w-10 border-2 border-emerald-100">
-                          <AvatarImage src={user?.picture} alt="User Avatar" />
-                          <AvatarFallback className="bg-emerald-100 text-emerald-700">
-                            {user?.name?.charAt(0) || user?.username?.charAt(0) || "U"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-medium text-gray-800">{user?.name || user?.username}</p>
-                        </div>
-                      </div>
-                      <Button
-                        onClick={handleLogout}
-                        className="w-full mt-4 bg-white text-emerald-600 hover:bg-gray-100 font-medium"
-                      >
-                        <LogOut className="mr-2 h-4 w-4" />
-                        Logout
-                      </Button>
-                      
-                      <Button 
-                        variant="ghost" 
-                        onClick={() => navigate(`/profile/${user.username}`)}
-                        className="justify-start"
-                      >
-                        <User className="mr-2 h-4 w-4" />
-                        Profile
-                      </Button>
+                      <UserProfileDropdown user={user} />
                     </>
                   ) : (
                     <>
                       <NavbarLink href="/about_us" className="text-gray-800 font-montserrat">
                         About Us
                       </NavbarLink>
-                      <NavbarLink href="/" onClick={() => navigate("/#why-talent-trade")} className="text-gray-800 font-montserrat">
+                      <NavbarLink href="/" onClick={() => navigateTo("/#why-talent-trade")} className="text-gray-800 font-montserrat">
                         Why Talent Trade
                       </NavbarLink>
                       <Button
-                        onClick={() => navigate("/login")}
+                        onClick={() => navigateTo("/login")}
                         className="bg-white text-emerald-600 hover:bg-gray-100 w-full font-medium"
                       >
                         Login/Register
                       </Button>
                     </>
                   )}
+                  <Separator className="my-2" />
+                  <h3 className="px-3 text-sm font-medium text-gray-500">Discover Sections</h3>
+                  <NavbarLink
+                    href="#for-you"
+                    className="justify-start pl-4 text-rose-500 font-semibold"
+                  >
+                    For You
+                  </NavbarLink>
+                  <NavbarLink
+                    href="#popular"
+                    className="justify-start pl-4 text-emerald-600 font-semibold"
+                  >
+                    Popular
+                  </NavbarLink>
+                  <NavbarLink
+                    href="#web-development"
+                    className="justify-start pl-6 text-teal-800"
+                  >
+                    Web Development
+                  </NavbarLink>
+                  <NavbarLink
+                    href="#mobile-apps"
+                    className="justify-start pl-6 text-teal-800"
+                  >
+                    Mobile Apps
+                  </NavbarLink>
+                  <NavbarLink
+                    href="#design"
+                    className="justify-start pl-6 text-teal-800"
+                  >
+                    Design
+                  </NavbarLink>
+                  <NavbarLink
+                    href="#data-science"
+                    className="justify-start pl-6 text-teal-800"
+                  >
+                    Data Science
+                  </NavbarLink>
                 </div>
               </SheetContent>
             </Sheet>

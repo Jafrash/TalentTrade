@@ -13,13 +13,10 @@ const api = axios.create({
 });
 
 // Add a request interceptor to add token to requests
+// Add a request interceptor to handle cookie-based authentication
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    // Only add token to requests that need authentication
-    if (token && !config.url?.includes('/auth/google') && !config.url?.includes('/user/unregistered')) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
+    // No need to manually add token header since we're using withCredentials
     return config;
   },
   (error) => {

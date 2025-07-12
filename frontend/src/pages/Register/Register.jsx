@@ -29,7 +29,7 @@ const Register = () => {
 
     try {
       // Using the backend server URL (running on port 8000)
-      const response = await axios.post("http://localhost:8000/auth/register", form);
+      const response = await axios.post("http://localhost:8000/auth/register", form, { withCredentials: true });
       if (response.data.success) {
         toast.success("Registration successful! Please complete your profile.");
         navigate("/profile-setup", { state: { userId: response.data.user.id } });

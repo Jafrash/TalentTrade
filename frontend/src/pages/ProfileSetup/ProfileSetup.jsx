@@ -69,7 +69,7 @@ const ProfileSetup = () => {
 
     setSaveLoading(true);
     try {
-      await axios.post(`/user/${location.state.userId}/profile`, form);
+      await axios.post(`/user/${location.state.userId}/profile`, form, { withCredentials: true });
       toast.success("Profile completed successfully!"); 
       navigate("/discover");
     } catch (error) {

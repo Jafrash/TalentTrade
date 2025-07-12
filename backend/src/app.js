@@ -2,8 +2,14 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import passport from "passport";
+import { initSocket } from "./config/socket.js";
+import http from "http";
 
 const app = express();
+const server = http.createServer(app);
+
+// Initialize Socket.IO
+const io = initSocket(server);
 
 app.use(
   cors({

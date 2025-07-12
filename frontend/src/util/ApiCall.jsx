@@ -6,7 +6,7 @@ const ApiCall = async (url, method, navigate, setUser, data) => {
 
   if (method === "GET") {
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, { withCredentials: true });
       return response.data;
     } catch (error) {
       console.error("Error in API call:", error);
@@ -27,7 +27,7 @@ const ApiCall = async (url, method, navigate, setUser, data) => {
     }
   } else if (method === "POST") {
     try {
-      const response = await axios.post(url, data);
+      const response = await axios.post(url, data, { withCredentials: true });
       return response.data;
     } catch (error) {
       console.error("Error in API call:", error);

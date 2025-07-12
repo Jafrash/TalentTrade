@@ -68,41 +68,48 @@ const Chats = () => {
   }, [])
 
   useEffect(() => {
-    socket = io(axios.defaults.baseURL)
-    if (user) {
-      socket.emit("setup", user)
-    }
-    socket.on("message recieved", (newMessageRecieved) => {
-      console.log("New Message Recieved: ", newMessageRecieved)
-      console.log("Selected Chat: ", selectedChat)
-      console.log("Selected Chat ID: ", selectedChat?.id)
-      console.log("New Message Chat ID: ", newMessageRecieved.chatId._id)
-      if (selectedChat && selectedChat.id === newMessageRecieved.chatId._id) {
-        setChatMessages((prevState) => [...prevState, newMessageRecieved])
+    if (!user) return;
+    
+    socket = io(axios.defaults.baseURL, {
+      withCredentials: true,
+      extraHeaders: {
+        Authorization: `Bearer ${localStorage.getItem("userInfo")}`
       }
-    })
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected");
+      socket.emit("setup", { userId: user._id });
+    });
+
+    socket.on("message received", (newMessage) => {
+      if (selectedChat && selectedChat._id === newMessage.chat) {
+        setChatMessages(prev => [...prev, newMessage]);
+      }
+    });
+
     return () => {
-      socket.off("message recieved")
-    }
-  }, [selectedChat])
+      socket.disconnect();
+    };
+  }, [user, selectedChat]);
 
   const fetchChats = async () => {
     try {
       setChatLoading(true)
-      const tempUser = JSON.parse(localStorage.getItem("userInfo"))
-      const { data } = await axios.get("/chat")
-      // console.log("Chats", data.data);
-      toast.success(data.message)
-      if (tempUser?._id) {
+      const { data } = await axios.get("/chat", {
+        withCredentials: true
+      })
+      
+      if (data.success) {
+        toast.success(data.message)
+        const tempUser = JSON.parse(localStorage.getItem("userInfo"))
         const temp = data.data.map((chat) => {
-
           return {
             id: chat._id,
             name: chat?.users.find((u) => u?._id !== tempUser?._id).name,
             picture: chat?.users.find((u) => u?._id !== tempUser?._id).picture,
             username: chat?.users.find((u) => u?._id !== tempUser?._id).username,
           }
-
         })
         setChats(temp)
       }
@@ -132,7 +139,7 @@ const Chats = () => {
   const handleChatClick = async (chatId) => {
     try {
       setChatMessageLoading(true)
-      const { data } = await axios.get(`http://localhost:8000/message/getMessages/${chatId}`)
+      const { data } = await axios.get(`http://localhost:8000/message/getMessages/${chatId}`, { withCredentials: true })
       setChatMessages(data.data)
       // console.log("Chat Messages:", data.data);
       setMessage("")
@@ -168,7 +175,7 @@ const Chats = () => {
         toast.error("Message is empty")
         return
       }
-      const { data } = await axios.post("/message/sendMessage", { chatId: selectedChat.id, content: message })
+      const { data } = await axios.post("/message/sendMessage", { chatId: selectedChat.id, content: message }, { withCredentials: true })
       // console.log("after sending message", data);
       socket.emit("new message", data.data)
       setChatMessages((prevState) => [...prevState, data.data])
@@ -194,7 +201,7 @@ const Chats = () => {
   const getRequests = async () => {
     try {
       setRequestLoading(true)
-      const { data } = await axios.get("/request/getRequests")
+      const { data } = await axios.get("/request/getRequests", { withCredentials: true })
       setRequests(data.data)
       console.log(data.data)
       toast.success(data.message)
@@ -238,7 +245,7 @@ const Chats = () => {
 
     try {
       setAcceptRequestLoading(true)
-      const { data } = await axios.post("/request/acceptRequest", { requestId: selectedRequest._id })
+      const { data } = await axios.post("/request/acceptRequest", { requestId: selectedRequest._id }, { withCredentials: true })
       console.log(data)
       toast.success(data.message)
       // remove this request from the requests list
@@ -266,7 +273,7 @@ const Chats = () => {
     console.log("Request rejected")
     try {
       setAcceptRequestLoading(true)
-      const { data } = await axios.post("/request/rejectRequest", { requestId: selectedRequest._id })
+      const { data } = await axios.post("/request/rejectRequest", { requestId: selectedRequest._id }, { withCredentials: true })
       console.log(data)
       toast.success(data.message)
       setRequests((prevState) => prevState.filter((request) => request._id !== selectedRequest._id))
@@ -572,7 +579,7 @@ const Chats = () => {
 
                 scheduleForm.username = selectedChat.username
                 try {
-                  const { data } = await axios.post("/user/sendScheduleMeet", scheduleForm)
+                  const { data } = await axios.post("/user/sendScheduleMeet", scheduleForm, { withCredentials: true })
                   toast.success("Request mail has been sent successfully!")
                   setScheduleForm({
                     date: "",
