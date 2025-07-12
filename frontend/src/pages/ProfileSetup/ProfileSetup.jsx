@@ -239,7 +239,7 @@ const ProfileSetup = () => {
     if (!validateForm()) return;
     setSaveLoading(true);
     try {
-      await axios.post(`/user/${location.state.userId}/profile`, form, { withCredentials: true });
+      await axios.post('/user/registered/saveRegDetails', form, { withCredentials: true });
       toast.success("Profile completed successfully!");
       navigate("/discover");
     } catch (error) {
@@ -264,16 +264,25 @@ const ProfileSetup = () => {
           </TabsList>
           <TabsContent value="registration">
             <div className="space-y-4">
-              <Input label="Name" name="name" value={form.name} onChange={handleInputChange} placeholder="Enter your full name" disabled />
-              <Input label="Email" name="email" value={form.email} onChange={handleInputChange} placeholder="Enter your email" disabled />
-              <Input label="Username" name="username" value={form.username} onChange={handleInputChange} placeholder="Enter your username" />
+              <Input label="Full Name" name="name" value={form.name} onChange={handleInputChange} placeholder="Enter your full name" required />
+              <Input label="Email" name="email" value={form.email} onChange={handleInputChange} placeholder="Enter your email" required />
+              <Input label="Username" name="username" value={form.username} onChange={handleInputChange} placeholder="Enter your username" required />
               <Input label="Linkedin Link" name="linkedinLink" value={form.linkedinLink} onChange={handleInputChange} placeholder="Enter your Linkedin link" />
               <Input label="Github Link" name="githubLink" value={form.githubLink} onChange={handleInputChange} placeholder="Enter your Github link" />
               <Input label="Portfolio Link" name="portfolioLink" value={form.portfolioLink} onChange={handleInputChange} placeholder="Enter your portfolio link" />
               <div>
                 <label className="block text-[#3BB4A1] mb-2">Skills Proficient At</label>
                 <div className="flex gap-2 mb-2">
-                  <Input value={skillsProficientAt} onChange={e => setSkillsProficientAt(e.target.value)} placeholder="Add a skill" />
+                  <select
+                    value={skillsProficientAt}
+                    onChange={e => setSkillsProficientAt(e.target.value)}
+                    className="rounded-md border border-gray-300 bg-slate-900 text-white p-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="">Select a skill</option>
+                    {skills.map((skill, idx) => (
+                      <option key={idx} value={skill}>{skill}</option>
+                    ))}
+                  </select>
                   <Button type="button" onClick={() => handleAddSkill("proficientAt")}>Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2">
@@ -285,7 +294,16 @@ const ProfileSetup = () => {
               <div>
                 <label className="block text-[#3BB4A1] mb-2">Skills To Learn</label>
                 <div className="flex gap-2 mb-2">
-                  <Input value={skillsToLearn} onChange={e => setSkillsToLearn(e.target.value)} placeholder="Add a skill" />
+                  <select
+                    value={skillsToLearn}
+                    onChange={e => setSkillsToLearn(e.target.value)}
+                    className="rounded-md border border-gray-300 bg-slate-900 text-white p-2 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                  >
+                    <option value="">Select a skill</option>
+                    {skills.map((skill, idx) => (
+                      <option key={idx} value={skill}>{skill}</option>
+                    ))}
+                  </select>
                   <Button type="button" onClick={() => handleAddSkill("toLearn")}>Add</Button>
                 </div>
                 <div className="flex flex-wrap gap-2">

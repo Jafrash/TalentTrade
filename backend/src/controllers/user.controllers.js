@@ -47,55 +47,38 @@ export const UnRegisteredUserDetails = asyncHandler(async (req, res) => {
 export const saveRegUnRegisteredUser=asyncHandler(async (req,res)=>{
     console.log("\n ********* Inside saveRegUnRegisteredUser function *********\n");
 
-    const { name, email, username, linkedinLink, githubLink, portfolioLink, skillsProficientAt, skillsToLearn } = req.body;
+    const { linkedinLink, githubLink, portfolioLink, skillsProficientAt, skillsToLearn } = req.body;
 
-    if (!name || !email || !username || skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
-    throw new ApiError(400, "Please provide all the details");
-  }
-
-    if (!email.match(/^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$/)) {
-    throw new ApiError(400, "Please provide valid email");
-  }
-  
-    if (username.length < 3) {
-    throw new ApiError(400, "Username should be at least 3 characters long");
-  }
+    if (skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
+      throw new ApiError(400, "Please provide at least one skill you have and one skill you want to learn");
+    }
 
     if (githubLink === "" && linkedinLink === "" && portfolioLink === "") {
-    throw new ApiError(400, "Please provide at least one link");
-  }
+      throw new ApiError(400, "Please provide at least one link");
+    }
 
     const githubRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+(?:\/)?$/;
-  const linkedinRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+(?:\/)?$/;
+    const linkedinRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+(?:\/)?$/;
 
-  if ((linkedinLink && !linkedinLink.match(linkedinRegex)) || (githubLink && !githubLink.match(githubRegex))) {
-    throw new ApiError(400, "Please provide valid GitHub and LinkedIn links");
-  }
-   
-    const existingUser = await User.findOne({ username: username });
-
-  if (existingUser) {
-    throw new ApiError(400, "Username already exists");
-  }
-  
-
-    const user = await UnRegisteredUser.findOneAndUpdate(
-    { email: email }, // Finds a user by email
-    {
-      name: name,
-      username: username,
-      linkedinLink: linkedinLink,
-      githubLink: githubLink,
-      portfolioLink: portfolioLink,
-      skillsProficientAt: skillsProficientAt,
-      skillsToLearn: skillsToLearn,
+    if ((linkedinLink && !linkedinLink.match(linkedinRegex)) || (githubLink && !githubLink.match(githubRegex))) {
+      throw new ApiError(400, "Please provide valid GitHub and LinkedIn links");
     }
-  );
 
+    // Find the user by session or token (not by email/username)
+    const user = await UnRegisteredUser.findOneAndUpdate(
+      { _id: req.user._id },
+      {
+        linkedinLink: linkedinLink,
+        githubLink: githubLink,
+        portfolioLink: portfolioLink,
+        skillsProficientAt: skillsProficientAt,
+        skillsToLearn: skillsToLearn,
+      }
+    );
 
     if (!user) {
-    throw new ApiError(500, "Error in saving user details");
-  }
+      throw new ApiError(500, "Error in saving user details");
+    }
 
     return res.status(200).json(new ApiResponse(200, user, "User details saved successfully"));
 });
@@ -171,9 +154,6 @@ export const registerUser = async (req, res) => {
   console.log("User:", req.user);
 
   const {
-    name,
-    email,
-    username,
     linkedinLink,
     githubLink,
     portfolioLink,
@@ -184,17 +164,11 @@ export const registerUser = async (req, res) => {
     projects,
   } = req.body;
 
-  if (!name || !email || !username || skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
-    throw new ApiError(400, "Please provide all the details");
-  }
-  if (!email.match(/^[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+$/)) {
-    throw new ApiError(400, "Please provide valid email");
-  }
-  if (username.length < 3) {
-    throw new ApiError(400, "Username should be atleast 3 characters long");
+  if (skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
+    throw new ApiError(400, "Please provide at least one skill you have and one skill you want to learn");
   }
   if (githubLink === "" && linkedinLink === "" && portfolioLink === "") {
-    throw new ApiError(400, "Please provide atleast one link");
+    throw new ApiError(400, "Please provide at least one link");
   }
   const githubRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+(?:\/)?$/;
   const linkedinRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+(?:\/)?$/;
@@ -239,63 +213,37 @@ export const registerUser = async (req, res) => {
     });
   }
 
-  const existingUser = await User.findOne({ email: email });
-
-  if (existingUser) {
-    throw new ApiError(400, "User Already registered");
+  // Find the user by session or token (not by email/username)
+  const user = await User.findById(req.user._id);
+  if (!user) {
+    throw new ApiError(404, "User not found");
   }
 
-  const checkUsername = await User.findOne({ username: username });
-  if (checkUsername) {
-    throw new ApiError(400, "Username already exists");
-  }
+  // Update user profile fields
+  user.linkedinLink = linkedinLink;
+  user.githubLink = githubLink;
+  user.portfolioLink = portfolioLink;
+  user.skillsProficientAt = skillsProficientAt;
+  user.skillsToLearn = skillsToLearn;
+  user.education = education;
+  user.bio = bio;
+  user.projects = projects;
+  await user.save();
 
-  const newUser = await User.create({
-    name: name,
-    email: email,
-    username: username,
-    linkedinLink: linkedinLink,
-    githubLink: githubLink,
-    portfolioLink: portfolioLink,
-    skillsProficientAt: skillsProficientAt,
-    skillsToLearn: skillsToLearn,
-    education: education,
-    bio: bio,
-    projects: projects,
-    picture: req.user.picture,
-  });
-
-  if (!newUser) {
-    throw new ApiError(500, "Error in saving user details");
-  }
-
-  await UnRegisteredUser.findOneAndDelete({ email: email });
-
-  const jwtToken = generateJWTToken_username(newUser);
-  const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
-  res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
-  res.clearCookie("accessTokenRegistration");
-  return res.status(200).json(new ApiResponse(200, newUser, "NewUser registered successfully"));
+  return res.status(200).json(new ApiResponse(200, user, "Profile completed successfully"));
 };
 
 export const saveRegRegisteredUser = asyncHandler(async (req, res) => {
   console.log("******** Inside saveRegRegisteredUser Function *******");
 
-  const { name, username, linkedinLink, githubLink, portfolioLink, skillsProficientAt, skillsToLearn, picture } =
-    req.body;
+  const { linkedinLink, githubLink, portfolioLink, skillsProficientAt, skillsToLearn, picture } = req.body;
 
-  console.log("Body: ", req.body);
-
-  if (!name || !username || skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
-    throw new ApiError(400, "Please provide all the details");
-  }
-
-  if (username.length < 3) {
-    throw new ApiError(400, "Username should be atleast 3 characters long");
+  if (skillsProficientAt.length === 0 || skillsToLearn.length === 0) {
+    throw new ApiError(400, "Please provide at least one skill you have and one skill you want to learn");
   }
 
   if (githubLink === "" && linkedinLink === "" && portfolioLink === "") {
-    throw new ApiError(400, "Please provide atleast one link");
+    throw new ApiError(400, "Please provide at least one link");
   }
 
   const githubRegex = /^(?:http(?:s)?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+(?:\/)?$/;
@@ -304,18 +252,17 @@ export const saveRegRegisteredUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide valid github and linkedin links");
   }
 
-  const user = await User.findOneAndUpdate(
-    { username: req.user.username },
+  const user = await User.findByIdAndUpdate(
+    req.user._id,
     {
-      name: name,
-      username: username,
       linkedinLink: linkedinLink,
       githubLink: githubLink,
       portfolioLink: portfolioLink,
       skillsProficientAt: skillsProficientAt,
       skillsToLearn: skillsToLearn,
       picture: picture,
-    }
+    },
+    { new: true }
   );
 
   if (!user) {
@@ -350,7 +297,7 @@ export const saveEduRegisteredUser = asyncHandler(async (req, res) => {
     }
   });
 
-  const user = await User.findOneAndUpdate({ username: req.user.username }, { education: education });
+  const user = await User.findByIdAndUpdate(req.user._id, { education: education }, { new: true });
 
   if (!user) {
     throw new ApiError(500, "Error in saving user details");
@@ -377,7 +324,7 @@ export const saveAddRegisteredUser = asyncHandler(async (req, res) => {
       if (!project.title || !project.description || !project.projectLink || !project.startDate || !project.endDate) {
         throw new ApiError(400, "Please provide all the details");
       }
-      if (project.projectLink.match(/^(http|https):\/\/[^ "]+$/)) {
+      if (project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
         throw new ApiError(400, "Please provide valid project link");
       }
       if (project.startDate > project.endDate) {
@@ -386,7 +333,7 @@ export const saveAddRegisteredUser = asyncHandler(async (req, res) => {
     });
   }
 
-  const user = await User.findOneAndUpdate({ username: req.user.username }, { bio: bio, projects: projects });
+  const user = await User.findByIdAndUpdate(req.user._id, { bio: bio, projects: projects }, { new: true });
 
   if (!user) {
     throw new ApiError(500, "Error in saving user details");
