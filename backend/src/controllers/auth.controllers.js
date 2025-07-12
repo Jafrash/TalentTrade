@@ -139,43 +139,97 @@ export const refreshToken = asyncHandler(async (req, res) => {
 });
 
 export const register = asyncHandler(async (req, res) => {
-  const { name, email, password, username } = req.body;
+  const { name, email, username, password } = req.body;
 
-  if (!name || !email || !password || !username) {
-    return res.status(400).json(new ApiResponse(400, null, "All fields are required"));
+  // Validate password
+  if (!password || password.length < 6) {
+    throw new ApiError(400, "Password must be at least 6 characters long");
   }
 
   // Check if user already exists
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    return res.status(400).json(new ApiResponse(400, null, "User already exists"));
+    throw new ApiError(400, "User already exists");
   }
 
   // Hash password
   const hashedPassword = await bcrypt.hash(password, 10);
 
   // Create new user
-  const user = await User.create({
+  const user = new User({
     name,
     email,
-    password: hashedPassword,
     username,
-    picture: "https://via.placeholder.com/150"
+    password: hashedPassword
   });
 
-  // Generate token
+  await user.save();
+
+  // Generate JWT token
   const jwtToken = generateJWTToken_username(user);
   const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
   res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
 
-  // Return user data without password
-  const userData = {
-    _id: user._id,
-    name: user.name,
-    email: user.email,
-    username: user.username,
-    picture: user.picture
-  };
+  return res.status(201).json({
+    success: true,
+    message: "Registration successful",
+    user: {
+      id: user._id,
+      name: user.name,
+      username: user.username,
+      email: user.email
+    }
+  });
+});
 
-  return res.status(201).json(new ApiResponse(201, userData, "Registration successful"));
+export const completeProfile = asyncHandler(async (req, res) => {
+  const { userId } = req.params;
+  const { picture, linkedinLink, githubLink, portfolioLink, 
+          skillsProficientAt, skillsToLearn, education, bio, projects } = req.body;
+
+  // Find user
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+
+  // Create or update user profile
+  let userProfile = await UserProfile.findOne({ userId });
+  if (!userProfile) {
+    userProfile = new UserProfile({
+      userId,
+      picture,
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      education,
+      bio,
+      projects
+    });
+  } else {
+    userProfile.set({
+      picture,
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      education,
+      bio,
+      projects
+    });
+  }
+
+  await userProfile.save();
+  user.isProfileComplete = true;
+  user.profile = userProfile._id;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: "Profile completed successfully",
+    profile: userProfile
+  });
 });

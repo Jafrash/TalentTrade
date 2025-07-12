@@ -1,6 +1,7 @@
 import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+
 import { CalendarIcon, Briefcase } from "lucide-react";
 
 const Box = ({ head, date, spec, desc, skills, score }) => {
@@ -8,7 +9,7 @@ const Box = ({ head, date, spec, desc, skills, score }) => {
     <Card className="w-full mb-6 shadow-md transition-all hover:shadow-lg">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-medium">{head}</CardTitle>
-        <div className="flex justify-between items-center text-sm text-muted-foreground mt-1">
+        <CardDescription className="flex justify-between items-center text-sm text-muted-foreground mt-1">
           <div className="flex items-center">
             <Briefcase className="mr-2 h-4 w-4" />
             <span>{spec}</span>
@@ -17,22 +18,22 @@ const Box = ({ head, date, spec, desc, skills, score }) => {
             <CalendarIcon className="mr-2 h-4 w-4" />
             <span>{date}</span>
           </div>
-        </div>
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <p className="text-sm mb-4">{desc}</p>
         
         {skills && (
-          <div className="space-y-2">
-            <p className="text-sm text-muted-foreground">Skills Used:</p>
+          <>
+            <CardDescription className="mb-2 text-sm text-muted-foreground">Skills Used:</CardDescription>
             <div className="flex flex-wrap gap-2">
-              {skills.map((skill, index) => (
+              {skills?.map((skill, index) => (
                 <Badge key={index} variant="secondary" className="bg-primary/10 hover:bg-primary/20 text-primary">
                   {skill}
                 </Badge>
               ))}
             </div>
-          </div>
+          </>
         )}
         
         {score && (

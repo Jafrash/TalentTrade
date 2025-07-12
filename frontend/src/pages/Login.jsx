@@ -1,97 +1,130 @@
-import React from "react";
-import { motion } from "framer-motion";
-import { Chrome } from "lucide-react";
+import React, { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useNavigate } from "react-router-dom";
+import api from "../utils/axiosInstance";
+import { useUser } from "../util/userContext";
+import { Link } from "react-router-dom";
 
 const Login = () => {
+  const navigate = useNavigate();
+  const { user, setUser } = useUser();
+  const [error, setError] = useState("");
+
   const handleGoogleLogin = () => {
+    // Clear any existing user data before starting Google login
+    localStorage.removeItem('userInfo');
+    localStorage.removeItem('token');
+    setUser(null);
+    
+    // Start Google OAuth flow
     window.location.href = "http://localhost:8000/auth/google";
   };
 
+  const handleManualLogin = async (e) => {
+    e.preventDefault();
+    const email = e.target.email.value;
+    const password = e.target.password.value;
+
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      if (response.data.success) {
+        // Update user context
+        setUser(response.data.data);
+        localStorage.setItem("userInfo", JSON.stringify(response.data.data));
+        // No need to set token in localStorage since it's handled via cookies
+        
+        // Redirect to home
+        navigate("/");
+      } else {
+        setError(response.data.message);
+      }
+    } catch (error) {
+      setError(error.response?.data?.message || "Login failed");
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-[#2D2D2D] flex items-center justify-center relative overflow-hidden">
-      {/* Background gradient effect */}
-      <div className="absolute inset-0 bg-gradient-to-br from-[#3BB4A1]/10 to-transparent pointer-events-none" />
-      
-      {/* Decorative circles */}
-      <motion.div 
-        className="absolute -left-32 -top-32 w-64 h-64 bg-[#3BB4A1]/20 rounded-full blur-3xl"
-        animate={{
-          scale: [1, 1.2, 1],
-          opacity: [0.3, 0.5, 0.3]
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-      
-      <motion.div 
-        className="absolute -right-32 -bottom-32 w-64 h-64 bg-[#3BB4A1]/20 rounded-full blur-3xl"
-        animate={{
-          scale: [1.2, 1, 1.2],
-          opacity: [0.5, 0.3, 0.5]
-        }}
-        transition={{
-          duration: 8,
-          repeat: Infinity,
-          ease: "easeInOut"
-        }}
-      />
-
-      {/* Login container */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="relative z-10 w-full max-w-md"
-      >
-        <div className="bg-[#1a1a1a]/80 backdrop-blur-lg p-8 rounded-2xl shadow-xl border border-[#3BB4A1]/20">
-          <motion.h1 
-            className="text-5xl font-bold text-center text-[#3BB4A1] mb-8"
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-          >
-            LOGIN
-          </motion.h1>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.8 }}
-            className="flex justify-center"
-          >
-            <motion.button
-              className="flex items-center gap-2 bg-[#3BB4A1] text-white px-6 py-3 rounded-lg 
-                         font-medium transition-all hover:bg-[#028477] active:scale-95"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleGoogleLogin}
-            >
-              <Chrome className="w-5 h-5" />
-              Login with Google
-            </motion.button>
-          </motion.div>
-
-          {/* Decorative elements */}
-          <div className="mt-8 flex items-center gap-4">
-            <div className="h-px flex-1 bg-[#3BB4A1]/20" />
-            <span className="text-sm text-gray-400">or</span>
-            <div className="h-px flex-1 bg-[#3BB4A1]/20" />
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div>
+          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
+            Sign in to your account
+          </h2>
+        </div>
+        <form className="mt-8 space-y-6" onSubmit={handleManualLogin}>
+          <div className="rounded-md shadow-sm -space-y-px">
+            <div>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Email address"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                autoComplete="current-password"
+                required
+                className="appearance-none rounded-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm"
+                placeholder="Password"
+              />
+            </div>
           </div>
 
-          {/* Additional login options or information */}
-          <motion.p 
-            className="mt-6 text-center text-gray-400 text-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
+          {error && (
+            <div className="text-red-600 text-sm text-center">
+              {error}
+            </div>
+          )}
+
+          <div>
+            <button
+              type="submit"
+              className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            >
+              Sign in
+            </button>
+          </div>
+        </form>
+
+        <div className="text-center">
+          <button
+            onClick={handleGoogleLogin}
+            className="w-full rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 flex items-center justify-center gap-2"
           >
-            By logging in, you agree to our Terms of Service and Privacy Policy
-          </motion.p>
+            Sign in with Google
+          </button>
         </div>
-      </motion.div>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <Link to="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Register
+            </Link>
+          </p>
+        </div>
+      </div>
+      <motion.p 
+        className="mt-6 text-center text-gray-400 text-sm"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.6 }}
+      >
+        By logging in, you agree to our Terms of Service and Privacy Policy
+      </motion.p>
     </div>
   );
 };

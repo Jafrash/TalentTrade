@@ -1,43 +1,12 @@
 import mongoose, { Schema } from "mongoose";
 
-const userSchema = new Schema(
-  {
-    username: {
-      type: String,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-    },
-    email: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-    },
-    name: {
-      type: String,
-      required: true,
-    },
-    isProfileComplete: {
-      type: Boolean,
-      default: false,
-    },
-    profile: {
-      type: Schema.Types.ObjectId,
-      ref: 'UserProfile',
-      default: null
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
 const userProfileSchema = new Schema(
   {
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: 'User',
+      required: true,
+    },
     picture: {
       type: String,
       default: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToK4qEfbnd-RN82wdL2awn_PMviy_pelocqQ",
@@ -86,7 +55,7 @@ const userProfileSchema = new Schema(
         },
         endDate: {
           type: Date,
-          default: null, // or you can leave it undefined
+          default: null,
         },
         score: {
           type: Number,
@@ -136,4 +105,4 @@ const userProfileSchema = new Schema(
   { timestamps: true }
 );
 
-export const User = mongoose.model("User", userSchema);
+export const UserProfile = mongoose.model("UserProfile", userProfileSchema);
