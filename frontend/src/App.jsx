@@ -15,6 +15,7 @@ import NotFound from './pages/NotFound.jsx';
 import Profile from './pages/Profile/Profile';
 import PrivateRoutes from "./util/PrivateRoutes";
 import Chats from './pages/chat/Chats';
+import ProfileSetup from './pages/ProfileSetup/ProfileSetup.jsx';
 function App() {
   
 
@@ -36,6 +37,7 @@ function App() {
          <Route path="*" element={<NotFound />} />
          
          <Route path="/profile/:username" element={<Profile/>}/>
+         <Route path="/profile-setup" element={<ProfileSetup />} />
        </Routes>
         <Footer/>
     </UserContextProvider>
