@@ -15,7 +15,19 @@ export const userDetailsWithoutID=asyncHandler(async (req,res)=>{
     // Populate the user's profile
     const userWithProfile = await User.findById(req.user._id).populate('profile');
     
-    return res.status(200).json(new ApiResponse(200, userWithProfile, "User details fetched successfully"));
+    if (!userWithProfile) {
+        throw new ApiError(404, "User not found");
+    }
+
+    // Combine user and profile data for frontend compatibility
+    const userData = {
+        ...userWithProfile.toObject(),
+        ...(userWithProfile.profile ? userWithProfile.profile.toObject() : {})
+    };
+    
+    console.log("User data being sent:", userData);
+    
+    return res.status(200).json(new ApiResponse(200, userData, "User details fetched successfully"));
 })
 
 export const UserDetails=asyncHandler(async (req,res)=>{
@@ -36,7 +48,14 @@ export const UserDetails=asyncHandler(async (req,res)=>{
 
     const status = request.length > 0 ? request[0].status : "Connect";
     
-    return res.status(200).json(new ApiResponse(200, { ...user.toObject(), status: status }, "User details fetched successfully"));
+    // Combine user and profile data for frontend compatibility
+    const userData = {
+        ...user.toObject(),
+        ...(user.profile ? user.profile.toObject() : {}),
+        status: status
+    };
+    
+    return res.status(200).json(new ApiResponse(200, userData, "User details fetched successfully"));
 })
 
 

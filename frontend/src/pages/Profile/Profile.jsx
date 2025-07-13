@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { useUser } from "../../util/UserContext";
+import { useUser } from "../../util/userContext";
 import { toast } from "react-toastify";
 import axios from "axios";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Github, Linkedin, ExternalLink, Edit, Star, AlertTriangle, ThumbsUp } from "lucide-react";
+import Box from "./Box";
 
 const Profile = () => {
   const { user, setUser } = useUser();
@@ -19,43 +20,63 @@ const Profile = () => {
   const { username } = useParams();
   const [loading, setLoading] = useState(true);
   const [connectLoading, setConnectLoading] = useState(false);
+  const [userContextLoading, setUserContextLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Handle user context loading
   useEffect(() => {
-    // If viewing own profile and user info exists
-    if (username === "me" && user) {
-      setProfileUser(user);
-      setLoading(false);
+    // Set a small delay to allow user context to initialize
+    const timer = setTimeout(() => {
+      setUserContextLoading(false);
+    }, 100);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    // Don't fetch data if user context is still loading
+    if (userContextLoading) return;
+
+    // If viewing own profile but user is not authenticated, redirect to login
+    if (username === "me" && !user) {
+      navigate("/login");
       return;
     }
 
-    // Only fetch from API if we're viewing someone else's profile
-    if (username !== "me") {
-      const getUser = async () => {
-        setLoading(true);
-        try {
-          const response = await axios.get(`http://localhost:8000/user/registered/getDetails/${username}`, {
+    const getUser = async () => {
+      setLoading(true);
+      try {
+        let response;
+        if (username === "me") {
+          // Get current user's own profile details
+          response = await axios.get(`http://localhost:8000/user/registered/getDetails`, {
             withCredentials: true
           });
-          setProfileUser(response.data.data);
-        } catch (error) {
-          console.error('Error fetching profile:', error);
-          if (error?.response?.status === 401 || error?.response?.data?.message === "Please Login") {
-            // Only clear user state and redirect for auth errors
-            localStorage.removeItem("userInfo");
-            setUser(null);
-            navigate("/login");
-          } else {
-            // For other errors, just show toast and keep user logged in
-            toast.error(error.response?.data?.message || 'Failed to fetch profile');
-          }
-        } finally {
-          setLoading(false);
+        } else {
+          // Get another user's profile details
+          response = await axios.get(`http://localhost:8000/user/registered/getDetails/${username}`, {
+            withCredentials: true
+          });
         }
-      };
-      getUser();
-    }
-  }, [username, user, setUser, navigate]);
+        console.log('Profile response:', response.data);
+        console.log('Profile user data:', response.data.data);
+        setProfileUser(response.data.data);
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        if (error?.response?.status === 401 || error?.response?.data?.message === "Please Login") {
+          // Only clear user state and redirect for auth errors
+          localStorage.removeItem("userInfo");
+          setUser(null);
+          navigate("/login");
+        } else {
+          // For other errors, just show toast and keep user logged in
+          toast.error(error.response?.data?.message || 'Failed to fetch profile');
+        }
+      } finally {
+        setLoading(false);
+      }
+    };
+    getUser();
+  }, [username, user, setUser, navigate, userContextLoading]);
 
   // Handle errors gracefully
   const handleError = (error) => {
@@ -117,7 +138,7 @@ const Profile = () => {
 
   return (
     <div className="container mx-auto py-8">
-      {loading ? (
+      {loading || userContextLoading ? (
         <div className="flex flex-col items-center justify-center h-[50vh] gap-4">
           <Skeleton className="h-32 w-32 rounded-full" />
           <Skeleton className="h-4 w-32" />
@@ -148,7 +169,7 @@ const Profile = () => {
               </Card>
 
               {/* Connect and Report Buttons */}
-              {user?.username !== username && (
+              {user && user.username !== username && (
                 <div className="flex gap-4">
                   <Button
                     onClick={profileUser?.status === "Connect" ? connectHandler : undefined}
@@ -177,8 +198,8 @@ const Profile = () => {
               )}
 
               {/* Edit Button */}
-              {user.username === username && (
-                <Link to="/edit_profile">
+              {user && user.username === username && (
+                <Link to="/profile-setup" state={{ userId: user._id, isEditing: true }}>
                   <Button variant="outline">
                     <Edit className="h-4 w-4 mr-2" />
                     Edit Profile
