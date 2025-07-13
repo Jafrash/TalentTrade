@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button";
 const ProfileSetup = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState("registration");
+  const [saveLoading, setSaveLoading] = React.useState(false);
+  const [autoSaving, setAutoSaving] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState("registration");
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -228,64 +229,56 @@ const ProfileSetup = () => {
 
   // --- Validation ---
   const validateForm = () => {
-    if (!form.username) {
-      toast.error("Username is empty");
+    console.log('Validating form data:', form);
+    
+    // Basic validation - only require essential fields
+    if (!form.name || !form.email || !form.username) {
+      toast.error("Please fill in your name, email, and username");
       return false;
     }
-    if (!form.skillsProficientAt.length) {
-      toast.error("Enter at least one Skill you are proficient at");
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      toast.error("Please enter a valid email address");
       return false;
     }
-    if (!form.skillsToLearn.length) {
-      toast.error("Enter at least one Skill you want to learn");
-      return false;
-    }
-    if (!form.portfolioLink && !form.githubLink && !form.linkedinLink) {
-      toast.error("Enter at least one link among portfolio, github and linkedin");
-      return false;
-    }
-    if (form.githubLink && !/^(?:http(?:s)?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+(?:\/)?$/.test(form.githubLink)) {
-      toast.error("Enter a valid github link");
-      return false;
-    }
-    if (form.linkedinLink && !/^(?:http(?:s)?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+(?:\/)?$/.test(form.linkedinLink)) {
-      toast.error("Enter a valid linkedin link");
-      return false;
-    }
-    if (form.portfolioLink && !form.portfolioLink.includes("http")) {
-      toast.error("Enter a valid portfolio link");
-      return false;
-    }
-    // Education validation
-    for (const edu of form.education) {
-      if (!edu.institution || !edu.degree || !edu.startDate || !edu.endDate || !edu.score) {
-        toast.error("Fill all education fields");
-        return false;
-      }
-    }
-    // Projects validation
-    for (const project of form.projects) {
-      if (!project.title || !project.techStack.length || !project.startDate || !project.endDate || !project.projectLink || !project.description) {
-        toast.error("Fill all project fields");
-        return false;
-      }
-      if (project.startDate > project.endDate) {
-        toast.error("Project start date must be before end date");
-        return false;
-      }
-      if (!project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
-        toast.error("Please provide valid project link");
-        return false;
-      }
-    }
-    if (!form.bio) {
-      toast.error("Bio is empty");
-      return false;
-    }
-    if (form.bio.length > 500) {
+
+    // Validate bio length if provided
+    if (form.bio && form.bio.length > 500) {
       toast.error("Bio should be less than 500 characters");
       return false;
     }
+
+    // Validate education entries if provided
+    for (let edu of form.education) {
+      if (edu.institution && edu.degree) {
+        // If institution and degree are provided, validate dates
+        if (edu.startDate && edu.endDate && new Date(edu.startDate) > new Date(edu.endDate)) {
+          toast.error("Start date cannot be after end date");
+          return false;
+        }
+      }
+    }
+
+    // Validate project entries if provided
+    for (let project of form.projects) {
+      if (project.title) {
+        // If project title is provided, validate dates
+        if (project.startDate && project.endDate && new Date(project.startDate) > new Date(project.endDate)) {
+          toast.error("Project start date cannot be after end date");
+          return false;
+        }
+        
+        // Validate project link format if provided
+        if (project.projectLink && !project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
+          toast.error("Please provide valid project link");
+          return false;
+        }
+      }
+    }
+
+    console.log('Form validation passed');
     return true;
   };
 
@@ -293,43 +286,140 @@ const ProfileSetup = () => {
   const handleSubmit = async () => {
     if (!validateForm()) return;
     setSaveLoading(true);
+    
     try {
+      console.log('Starting profile save process...');
+      console.log('Form data to save:', form);
+
       // Save registration details (skills and links)
-      await axios.post('/user/registered/saveRegDetails', {
-        linkedinLink: form.linkedinLink,
-        githubLink: form.githubLink,
-        portfolioLink: form.portfolioLink,
-        skillsProficientAt: form.skillsProficientAt,
-        skillsToLearn: form.skillsToLearn
+      console.log('Saving registration details...');
+      const regResponse = await axios.post('/user/registered/saveRegDetails', {
+        linkedinLink: form.linkedinLink || "",
+        githubLink: form.githubLink || "",
+        portfolioLink: form.portfolioLink || "",
+        skillsProficientAt: form.skillsProficientAt || [],
+        skillsToLearn: form.skillsToLearn || []
       }, { withCredentials: true });
+      console.log('Registration details saved:', regResponse.data);
 
       // Save education details
-      await axios.post('/user/registered/saveEduDetail', {
-        education: form.education
+      console.log('Saving education details...');
+      console.log('Education data:', form.education);
+      const eduResponse = await axios.post('/user/registered/saveEduDetail', {
+        education: form.education.filter(edu => edu.institution && edu.degree) // Only save valid education entries
       }, { withCredentials: true });
+      console.log('Education details saved:', eduResponse.data);
 
       // Save bio and projects
-      await axios.post('/user/registered/saveAddDetail', {
-        bio: form.bio,
-        projects: form.projects
+      console.log('Saving bio and projects...');
+      console.log('Bio data:', form.bio);
+      console.log('Projects data:', form.projects);
+      const bioResponse = await axios.post('/user/registered/saveAddDetail', {
+        bio: form.bio || "",
+        projects: form.projects.filter(project => project.title) // Only save valid project entries
       }, { withCredentials: true });
+      console.log('Bio and projects saved:', bioResponse.data);
 
       toast.success("Profile completed successfully!");
+      console.log('Profile save completed successfully');
       navigate("/discover");
     } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to complete profile");
+      console.error('Error saving profile:', error);
+      console.error('Error response:', error.response?.data);
+      
+      // Provide more specific error messages
+      if (error.response?.status === 401) {
+        toast.error("Authentication failed. Please login again.");
+        navigate("/login");
+      } else if (error.response?.status === 400) {
+        toast.error(error.response?.data?.message || "Invalid data provided");
+      } else if (error.response?.status === 500) {
+        toast.error("Server error. Please try again later.");
+      } else {
+        toast.error(error?.response?.data?.message || "Failed to complete profile. Please try again.");
+      }
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  // Auto-save function to save data as user progresses
+  const autoSave = async (section) => {
+    try {
+      setAutoSaving(true);
+      console.log(`Auto-saving ${section} data...`);
+      
+      switch (section) {
+        case 'registration':
+          await axios.post('/user/registered/saveRegDetails', {
+            linkedinLink: form.linkedinLink || "",
+            githubLink: form.githubLink || "",
+            portfolioLink: form.portfolioLink || "",
+            skillsProficientAt: form.skillsProficientAt || [],
+            skillsToLearn: form.skillsToLearn || []
+          }, { withCredentials: true });
+          break;
+          
+        case 'education':
+          await axios.post('/user/registered/saveEduDetail', {
+            education: form.education.filter(edu => edu.institution && edu.degree)
+          }, { withCredentials: true });
+          break;
+          
+        case 'projects':
+          await axios.post('/user/registered/saveAddDetail', {
+            bio: form.bio || "",
+            projects: form.projects.filter(project => project.title)
+          }, { withCredentials: true });
+          break;
+          
+        case 'bio':
+          await axios.post('/user/registered/saveAddDetail', {
+            bio: form.bio || "",
+            projects: form.projects.filter(project => project.title)
+          }, { withCredentials: true });
+          break;
+      }
+      
+      console.log(`${section} data auto-saved successfully`);
+    } catch (error) {
+      console.error(`Error auto-saving ${section} data:`, error);
+      // Don't show error toast for auto-save to avoid interrupting user flow
+    } finally {
+      setAutoSaving(false);
+    }
+  };
+
+  // Enhanced tab change handler with auto-save
+  const handleTabChange = (newTab) => {
+    // Auto-save current tab data before switching
+    if (activeTab === 'registration') {
+      autoSave('registration');
+    } else if (activeTab === 'education') {
+      autoSave('education');
+    } else if (activeTab === 'projects') {
+      autoSave('projects');
+    } else if (activeTab === 'bio') {
+      autoSave('bio');
+    }
+    
+    setActiveTab(newTab);
   };
 
   // --- UI ---
   return (
     <div className="min-h-screen bg-[#2D2D2D] p-4 md:p-8">
       <h1 className="text-4xl md:text-5xl font-bold text-[#3BB4A1] text-center mb-8">Complete Your Profile</h1>
+      
+      {/* Auto-save indicator */}
+      {autoSaving && (
+        <div className="fixed top-4 right-4 bg-[#3BB4A1] text-white px-4 py-2 rounded-lg shadow-lg z-50 flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent"></div>
+          <span className="text-sm">Auto-saving...</span>
+        </div>
+      )}
       <div className="max-w-4xl mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-8">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="mb-8">
           <TabsList className="w-full flex justify-between">
             <TabsTrigger value="registration">Registration</TabsTrigger>
             <TabsTrigger value="education">Education</TabsTrigger>
@@ -387,7 +477,7 @@ const ProfileSetup = () => {
                 </div>
               </div>
               <div className="flex justify-end gap-4 mt-4">
-                <Button type="button" onClick={() => setActiveTab("education")}>Next</Button>
+                <Button type="button" onClick={() => handleTabChange("education")}>Next</Button>
               </div>
             </div>
           </TabsContent>
@@ -410,8 +500,8 @@ const ProfileSetup = () => {
               ))}
               <Button type="button" onClick={handleAddEducation}>Add Education</Button>
               <div className="flex justify-between gap-4 mt-4">
-                <Button type="button" onClick={() => setActiveTab("registration")}>Back</Button>
-                <Button type="button" onClick={() => setActiveTab("projects")}>Next</Button>
+                <Button type="button" onClick={() => handleTabChange("registration")}>Back</Button>
+                <Button type="button" onClick={() => handleTabChange("projects")}>Next</Button>
               </div>
             </div>
           </TabsContent>
@@ -443,8 +533,8 @@ const ProfileSetup = () => {
               ))}
               <Button type="button" onClick={handleAddProject}>Add Project</Button>
               <div className="flex justify-between gap-4 mt-4">
-                <Button type="button" onClick={() => setActiveTab("education")}>Back</Button>
-                <Button type="button" onClick={() => setActiveTab("bio")}>Next</Button>
+                <Button type="button" onClick={() => handleTabChange("education")}>Back</Button>
+                <Button type="button" onClick={() => handleTabChange("bio")}>Next</Button>
               </div>
             </div>
           </TabsContent>
@@ -459,7 +549,7 @@ const ProfileSetup = () => {
                 className="w-full min-h-[120px] rounded-md border border-gray-300 bg-slate-900 text-white p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
               <div className="flex justify-between gap-4 mt-4">
-                <Button type="button" onClick={() => setActiveTab("projects")}>Back</Button>
+                <Button type="button" onClick={() => handleTabChange("projects")}>Back</Button>
                 <Button type="button" onClick={handleSubmit} disabled={saveLoading}>{saveLoading ? "Saving..." : "Submit"}</Button>
               </div>
             </div>
