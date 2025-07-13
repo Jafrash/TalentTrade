@@ -75,19 +75,22 @@ const UserProfileDropdown = ({ user }) => {
   );
 };
 
-const NavbarLink = ({ href, children, color = "text-gray-800", className = "", onClick }) => (
-  <Button 
-    variant="ghost" 
-    onClick={onClick || (() => window.location.href = href)}
-    className={`font-medium hover:bg-emerald-50 ${color} ${className}`}
-  >
-    {children}
-  </Button>
-);
+const NavbarLink = ({ href, children, color = "text-gray-800", className = "", onClick }) => {
+  const navigate = useNavigate();
+  return (
+    <Button 
+      variant="ghost" 
+      onClick={onClick || (() => navigate(href))}
+      className={`font-medium hover:bg-emerald-50 ${color} ${className}`}
+    >
+      {children}
+    </Button>
+  );
+};
 
 const Header = () => {
   const [discover, setDiscover] = useState(false);
-  const { user } = useUser();
+  const { user, logout } = useUser();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const navigate = useNavigate();
 
@@ -95,7 +98,7 @@ const Header = () => {
     if (user) {
       navigate('/chats');
     } else {
-      window.location.href = '/login';
+      navigate('/login');
     }
   };
 
@@ -103,8 +106,9 @@ const Header = () => {
     setShowLogoutDialog(true);
   };
 
-  const handleLogoutConfirm = () => {
-    // The logout function is now handled by useUser context
+  const handleLogoutConfirm = async () => {
+    // Call the logout function from useUser context
+    await logout();
     setShowLogoutDialog(false);
   };
 

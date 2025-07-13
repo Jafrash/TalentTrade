@@ -8,6 +8,7 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 dotenv.config();
 
@@ -79,16 +80,32 @@ export const manualLogin = asyncHandler(async (req, res) => {
     return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
-  if (!isMatch) {
-    return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
+  // Check if user has a password (for users who might have registered via OAuth)
+  if (!user.password) {
+    return res.status(401).json(new ApiResponse(401, null, "This account was created with Google. Please use Google login."));
+  }
+
+  try {
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
+    }
+  } catch (error) {
+    console.error("Password comparison error:", error);
+    return res.status(500).json(new ApiResponse(500, null, "Authentication error occurred"));
   }
 
   const jwtToken = generateJWTToken_username(user);
   const expiryDate = new Date(Date.now() + 1 * 60 * 60 * 1000);
   res.cookie("accessToken", jwtToken, { httpOnly: true, expires: expiryDate, secure: false });
 
-  return res.status(200).json(new ApiResponse(200, user, "Login successful"));
+  // Return user with default picture for navbar compatibility
+  const userWithPicture = {
+    ...user.toObject(),
+    picture: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcToK4qEfbnd-RN82wdL2awn_PMviy_pelocqQ"
+  };
+
+  return res.status(200).json(new ApiResponse(200, userWithPicture, "Login successful"));
 });
 
 export const refreshToken = asyncHandler(async (req, res) => {

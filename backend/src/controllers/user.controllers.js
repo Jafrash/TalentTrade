@@ -2,6 +2,7 @@ import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../models/user.model.js";
+import { UserProfile } from "../models/userProfile.model.js";
 import { Request } from "../models/request.model.js";
 import { UnRegisteredUser } from "../models/unRegisteredUser.model.js";
 import { generateJWTToken_username } from "../utils/generateJWTtoken.js";
@@ -9,15 +10,18 @@ import { sendMail } from "../utils/SendMail.js";
 import { uploadOnCloudinary } from "../config/connectCloudinary.js";
 
 export const userDetailsWithoutID=asyncHandler(async (req,res)=>{
-    console.log("\n******** Inside UserDetailsWithoutID fucntion *********\n");
+    console.log("\n******** Inside UserDetailsWithoutID function *********\n");
 
-    return res.status(200).json(new ApiResponse(200,req.user,"User details fetched successfully"));
+    // Populate the user's profile
+    const userWithProfile = await User.findById(req.user._id).populate('profile');
+    
+    return res.status(200).json(new ApiResponse(200, userWithProfile, "User details fetched successfully"));
 })
 
 export const UserDetails=asyncHandler(async (req,res)=>{
     console.log("\n******** Inside UserDetails function *********\n");
-    const username=req.paams.username;
-    const user=await User.findOne({username:username});
+    const username=req.params.username;
+    const user=await User.findOne({username:username}).populate('profile');
     if(!user){
         throw new ApiError(404,"User not found");
     }
@@ -32,7 +36,7 @@ export const UserDetails=asyncHandler(async (req,res)=>{
 
     const status = request.length > 0 ? request[0].status : "Connect";
     
-    return res.status(200).json(new ApiResponse(200, { ...user._doc, status: status }, "User details fetched successfully"));
+    return res.status(200).json(new ApiResponse(200, { ...user.toObject(), status: status }, "User details fetched successfully"));
 })
 
 
@@ -252,16 +256,35 @@ export const saveRegRegisteredUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Please provide valid github and linkedin links");
   }
 
+  // Find or create user profile
+  let userProfile = await UserProfile.findOne({ userId: req.user._id });
+  if (!userProfile) {
+    userProfile = new UserProfile({
+      userId: req.user._id,
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      picture
+    });
+  } else {
+    userProfile.set({
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      picture
+    });
+  }
+
+  await userProfile.save();
+
+  // Update user to reference the profile
   const user = await User.findByIdAndUpdate(
     req.user._id,
-    {
-      linkedinLink: linkedinLink,
-      githubLink: githubLink,
-      portfolioLink: portfolioLink,
-      skillsProficientAt: skillsProficientAt,
-      skillsToLearn: skillsToLearn,
-      picture: picture,
-    },
+    { profile: userProfile._id },
     { new: true }
   );
 
@@ -269,7 +292,7 @@ export const saveRegRegisteredUser = asyncHandler(async (req, res) => {
     throw new ApiError(500, "Error in saving user details");
   }
 
-  return res.status(200).json(new ApiResponse(200, user, "User details saved successfully"));
+  return res.status(200).json(new ApiResponse(200, { ...user.toObject(), ...userProfile.toObject() }, "User details saved successfully"));
 });
 
 export const saveEduRegisteredUser = asyncHandler(async (req, res) => {
@@ -297,13 +320,20 @@ export const saveEduRegisteredUser = asyncHandler(async (req, res) => {
     }
   });
 
-  const user = await User.findByIdAndUpdate(req.user._id, { education: education }, { new: true });
-
-  if (!user) {
-    throw new ApiError(500, "Error in saving user details");
+  // Find or create user profile
+  let userProfile = await UserProfile.findOne({ userId: req.user._id });
+  if (!userProfile) {
+    userProfile = new UserProfile({
+      userId: req.user._id,
+      education
+    });
+  } else {
+    userProfile.set({ education });
   }
 
-  return res.status(200).json(new ApiResponse(200, user, "User details saved successfully"));
+  await userProfile.save();
+
+  return res.status(200).json(new ApiResponse(200, { ...req.user.toObject(), ...userProfile.toObject() }, "User details saved successfully"));
 });
 
 export const saveAddRegisteredUser = asyncHandler(async (req, res) => {
@@ -319,12 +349,12 @@ export const saveAddRegisteredUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Bio should be less than 500 characters");
   }
 
-  if (projects.size > 0) {
+  if (projects && projects.length > 0) {
     projects.forEach((project) => {
       if (!project.title || !project.description || !project.projectLink || !project.startDate || !project.endDate) {
         throw new ApiError(400, "Please provide all the details");
       }
-      if (project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
+      if (!project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
         throw new ApiError(400, "Please provide valid project link");
       }
       if (project.startDate > project.endDate) {
@@ -333,13 +363,21 @@ export const saveAddRegisteredUser = asyncHandler(async (req, res) => {
     });
   }
 
-  const user = await User.findByIdAndUpdate(req.user._id, { bio: bio, projects: projects }, { new: true });
-
-  if (!user) {
-    throw new ApiError(500, "Error in saving user details");
+  // Find or create user profile
+  let userProfile = await UserProfile.findOne({ userId: req.user._id });
+  if (!userProfile) {
+    userProfile = new UserProfile({
+      userId: req.user._id,
+      bio,
+      projects
+    });
+  } else {
+    userProfile.set({ bio, projects });
   }
 
-  return res.status(200).json(new ApiResponse(200, user, "User details saved successfully"));
+  await userProfile.save();
+
+  return res.status(200).json(new ApiResponse(200, { ...req.user.toObject(), ...userProfile.toObject() }, "User details saved successfully"));
 });
 
 
@@ -357,53 +395,111 @@ export const uploadPic=asyncHandler(async (req,res)=>{
 
 export const discoverUsers=asyncHandler(async (req,res)=>{
     console.log("\n******* Inside discoverUsers function ********\n")
-      const webDevSkills = [
-    "HTML",
-    "CSS",
-    "JavaScript",
-    "React",
-    "Angular",
-    "Vue",
-    "Node.js",
-    "Express",
-    "MongoDB",
-    "SQL",
-    "NoSQL",
-  ];
+    
+    const webDevSkills = [
+      "HTML",
+      "CSS",
+      "JavaScript",
+      "React",
+      "Angular",
+      "Vue",
+      "Node.js",
+      "Express",
+      "MongoDB",
+      "SQL",
+      "NoSQL",
+    ];
 
     const machineLearningSkills = [
-    "Python",
-    "Natural Language Processing",
-    "Deep Learning",
-    "PyTorch",
-    "Machine Learning",
-  ];
+      "Python",
+      "Natural Language Processing",
+      "Deep Learning",
+      "PyTorch",
+      "Machine Learning",
+    ];
 
-  const users=await User.find({username:{$ne:req.user.username}});
-  if(!users){
-    throw new ApiError(500,"Error in fetching the users");
-  }
-  const usersToLearn=[];
-  const webDevUsers=[];
-  const mlUsers=[];
-  const otherUsers=[];
-  users.sort(()=>Math.random()-0.5);
+    // Get current user's profile to access their skillsToLearn
+    const currentUserProfile = await UserProfile.findOne({ userId: req.user._id });
+    if (!currentUserProfile) {
+      throw new ApiError(404, "User profile not found. Please complete your profile first.");
+    }
+
+    // Get all users except current user, populated with their profiles
+    const users = await User.find({ username: { $ne: req.user.username } }).populate('profile');
+    if (!users) {
+      throw new ApiError(500, "Error in fetching the users");
+    }
+
+    const usersToLearn = [];
+    const webDevUsers = [];
+    const mlUsers = [];
+    const otherUsers = [];
+    users.sort(() => Math.random() - 0.5);
 
     users.forEach((user) => {
-    if (user.skillsProficientAt.some((skill) => req.user.skillsToLearn.includes(skill)) && usersToLearn.length < 5) {
-      usersToLearn.push(user);
-    } else if (user.skillsProficientAt.some((skill) => webDevSkills.includes(skill)) && webDevUsers.length < 5) {
-      webDevUsers.push(user);
-    } else if (user.skillsProficientAt.some((skill) => machineLearningSkills.includes(skill)) && mlUsers.length < 5) {
-      mlUsers.push(user);
-    } else {
-      if (otherUsers.length < 5) otherUsers.push(user);
-    }
-  });
+      // Get user's profile data
+      const userProfile = user.profile;
+      if (!userProfile) return; // Skip users without profiles
 
-  return res.status(200).json(new ApiResponse(200,{forYou:usersToLearn,webDev:webDevUsers,
-  ml:mlUsers,others:otherUsers},"Users fetched successfully"))
-})
+      const userSkills = userProfile.skillsProficientAt || [];
+      const currentUserSkillsToLearn = currentUserProfile.skillsToLearn || [];
+
+      if (userSkills.some((skill) => currentUserSkillsToLearn.includes(skill)) && usersToLearn.length < 5) {
+        usersToLearn.push({
+          ...user.toObject(),
+          skillsProficientAt: userSkills,
+          skillsToLearn: userProfile.skillsToLearn || [],
+          picture: userProfile.picture,
+          bio: userProfile.bio,
+          linkedinLink: userProfile.linkedinLink,
+          githubLink: userProfile.githubLink,
+          portfolioLink: userProfile.portfolioLink
+        });
+      } else if (userSkills.some((skill) => webDevSkills.includes(skill)) && webDevUsers.length < 5) {
+        webDevUsers.push({
+          ...user.toObject(),
+          skillsProficientAt: userSkills,
+          skillsToLearn: userProfile.skillsToLearn || [],
+          picture: userProfile.picture,
+          bio: userProfile.bio,
+          linkedinLink: userProfile.linkedinLink,
+          githubLink: userProfile.githubLink,
+          portfolioLink: userProfile.portfolioLink
+        });
+      } else if (userSkills.some((skill) => machineLearningSkills.includes(skill)) && mlUsers.length < 5) {
+        mlUsers.push({
+          ...user.toObject(),
+          skillsProficientAt: userSkills,
+          skillsToLearn: userProfile.skillsToLearn || [],
+          picture: userProfile.picture,
+          bio: userProfile.bio,
+          linkedinLink: userProfile.linkedinLink,
+          githubLink: userProfile.githubLink,
+          portfolioLink: userProfile.portfolioLink
+        });
+      } else {
+        if (otherUsers.length < 5) {
+          otherUsers.push({
+            ...user.toObject(),
+            skillsProficientAt: userSkills,
+            skillsToLearn: userProfile.skillsToLearn || [],
+            picture: userProfile.picture,
+            bio: userProfile.bio,
+            linkedinLink: userProfile.linkedinLink,
+            githubLink: userProfile.githubLink,
+            portfolioLink: userProfile.portfolioLink
+          });
+        }
+      }
+    });
+
+    return res.status(200).json(new ApiResponse(200, {
+      forYou: usersToLearn,
+      webDev: webDevUsers,
+      ml: mlUsers,
+      others: otherUsers
+    }, "Users fetched successfully"));
+});
 
 export const sendScheduleMeet = asyncHandler(async (req, res) => {
   console.log("******** Inside sendScheduleMeet Function *******");

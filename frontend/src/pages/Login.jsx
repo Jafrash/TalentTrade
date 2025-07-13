@@ -28,7 +28,7 @@ const Login = () => {
     try {
       const response = await api.post("/auth/login", { email, password }, { withCredentials: true });
       if (response.data.success) {
-        // Update user context
+        // Update user context - the user data is in response.data.data
         setUser(response.data.data);
         localStorage.setItem("userInfo", JSON.stringify(response.data.data));
         // Do NOT try to set cookies manually!
