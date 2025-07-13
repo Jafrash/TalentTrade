@@ -48,7 +48,62 @@ const ProfileSetup = () => {
       navigate("/login");
       return;
     }
+
+    // If editing, load existing profile data
+    if (location.state?.isEditing) {
+      loadExistingProfile();
+    }
   }, [location.state, navigate]);
+
+  const loadExistingProfile = async () => {
+    try {
+      const response = await axios.get('/user/registered/getDetails', { withCredentials: true });
+      const userData = response.data.data;
+      
+      // Populate form with existing data
+      setForm(prev => ({
+        ...prev,
+        name: userData.name || "",
+        email: userData.email || "",
+        username: userData.username || "",
+        linkedinLink: userData.linkedinLink || "",
+        githubLink: userData.githubLink || "",
+        portfolioLink: userData.portfolioLink || "",
+        skillsProficientAt: userData.skillsProficientAt || [],
+        skillsToLearn: userData.skillsToLearn || [],
+        education: userData.education && userData.education.length > 0 ? userData.education.map(edu => ({
+          id: uuidv4(),
+          institution: edu.institution || "",
+          degree: edu.degree || "",
+          startDate: edu.startDate || "",
+          endDate: edu.endDate || "",
+          score: edu.score || "",
+          description: edu.description || ""
+        })) : [{
+          id: uuidv4(),
+          institution: "",
+          degree: "",
+          startDate: "",
+          endDate: "",
+          score: "",
+          description: "",
+        }],
+        bio: userData.bio || "",
+        projects: userData.projects && userData.projects.length > 0 ? userData.projects.map(project => ({
+          id: uuidv4(),
+          title: project.title || "",
+          techStack: project.techStack || [],
+          startDate: project.startDate || "",
+          endDate: project.endDate || "",
+          projectLink: project.projectLink || "",
+          description: project.description || ""
+        })) : []
+      }));
+    } catch (error) {
+      console.error('Error loading profile:', error);
+      toast.error('Failed to load existing profile data');
+    }
+  };
 
   // --- Handlers ---
   const handleInputChange = (e) => {
@@ -239,7 +294,26 @@ const ProfileSetup = () => {
     if (!validateForm()) return;
     setSaveLoading(true);
     try {
-      await axios.post('/user/registered/saveRegDetails', form, { withCredentials: true });
+      // Save registration details (skills and links)
+      await axios.post('/user/registered/saveRegDetails', {
+        linkedinLink: form.linkedinLink,
+        githubLink: form.githubLink,
+        portfolioLink: form.portfolioLink,
+        skillsProficientAt: form.skillsProficientAt,
+        skillsToLearn: form.skillsToLearn
+      }, { withCredentials: true });
+
+      // Save education details
+      await axios.post('/user/registered/saveEduDetail', {
+        education: form.education
+      }, { withCredentials: true });
+
+      // Save bio and projects
+      await axios.post('/user/registered/saveAddDetail', {
+        bio: form.bio,
+        projects: form.projects
+      }, { withCredentials: true });
+
       toast.success("Profile completed successfully!");
       navigate("/discover");
     } catch (error) {

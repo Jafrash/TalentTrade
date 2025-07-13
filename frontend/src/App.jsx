@@ -16,6 +16,7 @@ import Profile from './pages/Profile/Profile';
 import PrivateRoutes from "./util/PrivateRoutes";
 import Chats from './pages/chat/Chats';
 import ProfileSetup from './pages/ProfileSetup/ProfileSetup.jsx';
+import EditProfile from './pages/EditProfile/EditProfile.jsx';
 function App() {
   
 
@@ -27,6 +28,7 @@ function App() {
         
         <Route element={<PrivateRoutes />}>
           <Route path="/chats" element={<Chats />} />
+          <Route path="/edit-profile" element={<EditProfile />} />
         </Route>
         
          <Route path="/about_us" element={<AboutUs />} />

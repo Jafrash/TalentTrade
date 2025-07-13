@@ -22,10 +22,23 @@ export const userDetailsWithoutID=asyncHandler(async (req,res)=>{
     // Combine user and profile data for frontend compatibility
     const userData = {
         ...userWithProfile.toObject(),
-        ...(userWithProfile.profile ? userWithProfile.profile.toObject() : {})
+        ...(userWithProfile.profile ? userWithProfile.profile.toObject() : {}),
+        // Ensure profile fields are properly set
+        education: userWithProfile.profile?.education || [],
+        bio: userWithProfile.profile?.bio || "",
+        skillsProficientAt: userWithProfile.profile?.skillsProficientAt || [],
+        skillsToLearn: userWithProfile.profile?.skillsToLearn || [],
+        linkedinLink: userWithProfile.profile?.linkedinLink || "",
+        githubLink: userWithProfile.profile?.githubLink || "",
+        portfolioLink: userWithProfile.profile?.portfolioLink || "",
+        picture: userWithProfile.profile?.picture || "",
+        projects: userWithProfile.profile?.projects || []
     };
     
     console.log("User data being sent:", userData);
+    console.log("Profile data:", userWithProfile.profile);
+    console.log("Education:", userData.education);
+    console.log("Bio:", userData.bio);
     
     return res.status(200).json(new ApiResponse(200, userData, "User details fetched successfully"));
 })
@@ -52,6 +65,16 @@ export const UserDetails=asyncHandler(async (req,res)=>{
     const userData = {
         ...user.toObject(),
         ...(user.profile ? user.profile.toObject() : {}),
+        // Ensure profile fields are properly set
+        education: user.profile?.education || [],
+        bio: user.profile?.bio || "",
+        skillsProficientAt: user.profile?.skillsProficientAt || [],
+        skillsToLearn: user.profile?.skillsToLearn || [],
+        linkedinLink: user.profile?.linkedinLink || "",
+        githubLink: user.profile?.githubLink || "",
+        portfolioLink: user.profile?.portfolioLink || "",
+        picture: user.profile?.picture || "",
+        projects: user.profile?.projects || [],
         status: status
     };
     
@@ -130,7 +153,7 @@ export const saveEduUnRegisteredUser=asyncHandler(async (req,res)=>{
         }
     })
 
-    const user=await UnRegisteredUser.findOneAndUpdate({email:email},{education:education});
+    const user=await UnRegisteredUser.findOneAndUpdate({_id:req.user._id},{education:education});
     if(!user){
         throw new ApiError(500,"Error in saving user details");
     }
@@ -148,12 +171,12 @@ export const saveAddUnRegisteredUser=asyncHandler(async (req,res)=>{
     if(bio.length>500){
         throw new ApiError(400,"Bio should be less than 500 characters");
     }
-    if(projects.size>0){
+    if(projects && projects.length>0){
         projects.forEach((project)=>{
-            if(!project.title||!project.description||!project.link||!project.startDate||!project.endDate){
-                throw new ApiError(400,"Pleasse provide all the details");
+            if(!project.title||!project.description||!project.projectLink||!project.startDate||!project.endDate){
+                throw new ApiError(400,"Please provide all the details");
             }
-            if (project.projectLink.match(/^(http|https):\/\/[^ "]+$/)) {
+            if (!project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
                 throw new ApiError(400, "Please provide valid project link");
             }
             if(project.startDate>project.endDate){
@@ -161,7 +184,7 @@ export const saveAddUnRegisteredUser=asyncHandler(async (req,res)=>{
             }
         })
     }
-    const user = await UnRegisteredUser.findOneAndUpdate({email:email},{bio:bio,projects:projects});
+    const user = await UnRegisteredUser.findOneAndUpdate({_id:req.user._id},{bio:bio,projects:projects});
     if(!user){
         throw new ApiError(500,"Error saving user details")
     }
@@ -222,12 +245,12 @@ export const registerUser = async (req, res) => {
   if (bio.length > 500) {
     throw new ApiError(400, "Bio should be less than 500 characters");
   }
-  if (projects.size > 0) {
+  if (projects && projects.length > 0) {
     projects.forEach((project) => {
       if (!project.title || !project.description || !project.projectLink || !project.startDate || !project.endDate) {
         throw new ApiError(400, "Please provide all the details");
       }
-      if (project.projectLink.match(/^(http|https):\/\/[^ "]+$/)) {
+      if (!project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
         throw new ApiError(400, "Please provide valid project link");
       }
       if (project.startDate > project.endDate) {
@@ -242,18 +265,47 @@ export const registerUser = async (req, res) => {
     throw new ApiError(404, "User not found");
   }
 
-  // Update user profile fields
-  user.linkedinLink = linkedinLink;
-  user.githubLink = githubLink;
-  user.portfolioLink = portfolioLink;
-  user.skillsProficientAt = skillsProficientAt;
-  user.skillsToLearn = skillsToLearn;
-  user.education = education;
-  user.bio = bio;
-  user.projects = projects;
+  // Create or update user profile
+  let userProfile = await UserProfile.findOne({ userId: req.user._id });
+  if (!userProfile) {
+    userProfile = new UserProfile({
+      userId: req.user._id,
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      education,
+      bio,
+      projects
+    });
+  } else {
+    userProfile.set({
+      linkedinLink,
+      githubLink,
+      portfolioLink,
+      skillsProficientAt,
+      skillsToLearn,
+      education,
+      bio,
+      projects
+    });
+  }
+
+  await userProfile.save();
+
+  // Update user to reference the profile and mark as complete
+  user.profile = userProfile._id;
+  user.isProfileComplete = true;
   await user.save();
 
-  return res.status(200).json(new ApiResponse(200, user, "Profile completed successfully"));
+  // Return combined user and profile data
+  const combinedData = {
+    ...user.toObject(),
+    ...userProfile.toObject()
+  };
+
+  return res.status(200).json(new ApiResponse(200, combinedData, "Profile completed successfully"));
 };
 
 export const saveRegRegisteredUser = asyncHandler(async (req, res) => {
