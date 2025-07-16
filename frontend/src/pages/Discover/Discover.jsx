@@ -20,6 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
+import SearchComponent from "./Search.jsx";
 
 // Enhanced Profile Card Component
 const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) => {
@@ -98,43 +99,12 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
   );
 };
 
-// Enhanced Search Component
-const Search = () => {
-  const [isActive, setIsActive] = useState(false);
-  
-  const handleFocus = () => {
-    setIsActive(true);
-  };
-  
-  const handleBlur = () => {
-    setIsActive(false);
-  };
-  
-  return (
-    <div className={`relative flex items-center bg-white dark:bg-gray-800 rounded-full px-4 py-2 mb-8 transition-all duration-300 shadow-md ${
-      isActive ? "shadow-lg ring-2 ring-green-300 dark:ring-green-600" : ""
-    } max-w-2xl mx-auto`}>
-      <SearchIcon 
-        className={`w-5 h-5 mr-2 ${
-          isActive ? "text-green-600 dark:text-green-400" : "text-gray-400"
-        }`}
-      />
-      <Input
-        type="text"
-        placeholder="Search for skills, expertise or users..."
-        onFocus={handleFocus}
-        onBlur={handleBlur}
-        className="flex-1 border-none bg-transparent shadow-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none"
-      />
-    </div>
-  );
-};
-
 const Discover = () => {
   const navigate = useNavigate();
   const { user, setUser } = useUser();
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("for-you");
+  const [searchValue, setSearchValue] = useState("");
 
   const [userData, setUserData] = useState({
     forYou: [],
@@ -200,6 +170,42 @@ const Discover = () => {
     if (element) {
       element.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  // Helper function to filter users by search value
+  const filterUsers = (users) => {
+    if (!searchValue.trim()) return users;
+    const lower = searchValue.toLowerCase();
+    return users.filter(user => {
+      const name = user?.name?.toLowerCase() || "";
+      const username = user?.username?.toLowerCase() || "";
+      const bio = user?.bio?.toLowerCase() || "";
+      const skills = (user?.skillsProficientAt || []).join(" ").toLowerCase();
+      return (
+        name.includes(lower) ||
+        username.includes(lower) ||
+        bio.includes(lower) ||
+        skills.includes(lower)
+      );
+    });
+  };
+
+  // Helper function to get all unique users from all categories
+  const getAllUsers = () => {
+    const all = [
+      ...userData.forYou,
+      ...userData.webDev,
+      ...userData.ml,
+      ...userData.others
+    ];
+    // Remove duplicates by username
+    const seen = new Set();
+    return all.filter(user => {
+      if (!user?.username) return false;
+      if (seen.has(user.username)) return false;
+      seen.add(user.username);
+      return true;
+    });
   };
 
   const renderUserCards = (users) => {
@@ -338,42 +344,49 @@ const Discover = () => {
         <div className="p-4 md:p-6 h-full">
           <div className="max-w-6xl mx-auto">
             {/* Search component */}
-            <Search />
+            <SearchComponent value={searchValue} onChange={setSearchValue} />
             
-            <section id="for-you" className="py-4">
-              <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
-                <Sparkles className="h-6 w-6 mr-2" />
-                For You
-              </h1>
-              {renderUserCards(userData.forYou)}
-            </section>
-            
-            <Separator className="my-8 bg-green-100 dark:bg-gray-700" />
-
-            <section id="popular" className="py-4">
-              <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
-                <Users className="h-6 w-6 mr-2" />
-                Popular
-              </h1>
-              
-              <h2 id="web-development" className="text-xl font-semibold mb-4 text-green-600 dark:text-green-300 flex items-center">
-                <Code className="h-5 w-5 mr-2" />
-                Web Development
-              </h2>
-              {renderUserCards(userData.webDev)}
-              
-              <h2 id="machine-learning" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
-                <Brain className="h-5 w-5 mr-2" />
-                Machine Learning
-              </h2>
-              {renderUserCards(userData.ml)}
-              
-              <h2 id="others" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
-                <Users className="h-5 w-5 mr-2" />
-                Others
-              </h2>
-              {renderUserCards(userData.others)}
-            </section>
+            {searchValue.trim() ? (
+              <section className="py-4">
+                <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
+                  <SearchIcon className="h-6 w-6 mr-2" />
+                  Search Results
+                </h1>
+                {renderUserCards(filterUsers(getAllUsers()))}
+              </section>
+            ) : (
+              <>
+                <section id="for-you" className="py-4">
+                  <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
+                    <Sparkles className="h-6 w-6 mr-2" />
+                    For You
+                  </h1>
+                  {renderUserCards(filterUsers(userData.forYou))}
+                </section>
+                <Separator className="my-8 bg-green-100 dark:bg-gray-700" />
+                <section id="popular" className="py-4">
+                  <h1 className="text-2xl font-bold mb-6 text-green-700 dark:text-green-400 flex items-center">
+                    <Users className="h-6 w-6 mr-2" />
+                    Popular
+                  </h1>
+                  <h2 id="web-development" className="text-xl font-semibold mb-4 text-green-600 dark:text-green-300 flex items-center">
+                    <Code className="h-5 w-5 mr-2" />
+                    Web Development
+                  </h2>
+                  {renderUserCards(filterUsers(userData.webDev))}
+                  <h2 id="machine-learning" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
+                    <Brain className="h-5 w-5 mr-2" />
+                    Machine Learning
+                  </h2>
+                  {renderUserCards(filterUsers(userData.ml))}
+                  <h2 id="others" className="text-xl font-semibold mt-8 mb-4 text-green-600 dark:text-green-300 flex items-center">
+                    <Users className="h-5 w-5 mr-2" />
+                    Others
+                  </h2>
+                  {renderUserCards(filterUsers(userData.others))}
+                </section>
+              </>
+            )}
           </div>
         </div>
       </div>

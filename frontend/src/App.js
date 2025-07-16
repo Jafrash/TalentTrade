@@ -5,6 +5,7 @@ import Register from './pages/Register/Register';
 import Profile from './pages/Profile/Profile';
 import Navbar from './components/Navbar';
 
+// NOTE: This file is not used as the main app entry point. See App.jsx for main routing.
 function App() {
   return (
     <Router>
@@ -12,7 +13,6 @@ function App() {
         <div className="min-h-screen bg-[#2D2D2D]">
           <Navbar />
           <Routes>
-            <Route path="/" element={<Register />} />
             <Route path="/register" element={<Register />} />
             <Route path="/profile" element={<Profile />} />
           </Routes>

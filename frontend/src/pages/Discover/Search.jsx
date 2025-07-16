@@ -2,22 +2,17 @@ import React, { useState } from 'react';
 import { Search as SearchIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 
-const Search = () => {
+const Search = ({ value, onChange }) => {
   const [isActive, setIsActive] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   
   const handleFocus = () => {
     setIsActive(true);
   };
   
   const handleBlur = () => {
-    if (searchValue.length === 0) {
+    if (!value || value.length === 0) {
       setIsActive(false);
     }
-  };
-  
-  const handleChange = (e) => {
-    setSearchValue(e.target.value);
   };
   
   return (
@@ -32,18 +27,18 @@ const Search = () => {
       <Input
         type="text"
         placeholder="Search for skills, expertise or users..."
-        value={searchValue}
-        onChange={handleChange}
+        value={value}
+        onChange={e => onChange(e.target.value)}
         onFocus={handleFocus}
         onBlur={handleBlur}
         className="flex-1 border-none bg-transparent shadow-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 focus-visible:outline-none text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
       />
-      {searchValue.length > 0 && (
+      {value && value.length > 0 && (
         <button 
           className="bg-green-500 hover:bg-green-600 text-white rounded-full px-4 py-1 ml-2 text-sm font-medium transition-all duration-200"
-          onClick={() => console.log('Search for:', searchValue)}
+          onClick={() => onChange("")}
         >
-          Search
+          Clear
         </button>
       )}
     </div>
