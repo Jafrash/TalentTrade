@@ -13,6 +13,9 @@ export const createChat = asyncHandler(async (req, res) => {
   const { users } = req.body;
   const senderId = req.user._id;
 
+  console.log("[createChat] senderId:", senderId);
+  console.log("[createChat] users:", users);
+
   if (!users || users.length < 1) {
     throw new ApiError(400, "Please provide recipient user ID");
   }
@@ -26,15 +29,18 @@ export const createChat = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, "Chat already exists", existingChat));
   }
 
-  const chat = await Chat.create({
-    users: [senderId, ...users]
-  });
-
-  if (!chat) {
-    throw new ApiError(500, "Error creating chat");
+  try {
+    const chat = await Chat.create({
+      users: [senderId, ...users]
+    });
+    if (!chat) {
+      throw new ApiError(500, "Error creating chat");
+    }
+    res.status(200).json(new ApiResponse(200, "Chat created Successfully", chat));
+  } catch (err) {
+    console.error("[createChat] Error during Chat.create:", err);
+    throw new ApiError(500, "Error creating chat: " + err.message);
   }
-
-  res.status(200).json(new ApiResponse(200, "Chat created Successfully", chat));
 });
 
 export const getChats = asyncHandler(async (req, res) => {

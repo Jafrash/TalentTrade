@@ -467,27 +467,27 @@ export const uploadPic=asyncHandler(async (req,res)=>{
 export const discoverUsers=asyncHandler(async (req,res)=>{
     console.log("\n******* Inside discoverUsers function ********\n")
     
-    const webDevSkills = [
-      "HTML",
-      "CSS",
-      "JavaScript",
-      "React",
-      "Angular",
-      "Vue",
-      "Node.js",
-      "Express",
-      "MongoDB",
-      "SQL",
-      "NoSQL",
-    ];
+      const webDevSkills = [
+    "HTML",
+    "CSS",
+    "JavaScript",
+    "React",
+    "Angular",
+    "Vue",
+    "Node.js",
+    "Express",
+    "MongoDB",
+    "SQL",
+    "NoSQL",
+  ];
 
     const machineLearningSkills = [
-      "Python",
-      "Natural Language Processing",
-      "Deep Learning",
-      "PyTorch",
-      "Machine Learning",
-    ];
+    "Python",
+    "Natural Language Processing",
+    "Deep Learning",
+    "PyTorch",
+    "Machine Learning",
+  ];
 
     // Get current user's profile to access their skillsToLearn
     const currentUserProfile = await UserProfile.findOne({ userId: req.user._id });
@@ -499,7 +499,7 @@ export const discoverUsers=asyncHandler(async (req,res)=>{
     const users = await User.find({ username: { $ne: req.user.username } }).populate('profile');
     if (!users) {
       throw new ApiError(500, "Error in fetching the users");
-    }
+  }
 
     const usersToLearn = [];
     const webDevUsers = [];
@@ -548,7 +548,7 @@ export const discoverUsers=asyncHandler(async (req,res)=>{
           githubLink: userProfile.githubLink,
           portfolioLink: userProfile.portfolioLink
         });
-      } else {
+    } else {
         if (otherUsers.length < 5) {
           otherUsers.push({
             ...user.toObject(),
@@ -561,8 +561,8 @@ export const discoverUsers=asyncHandler(async (req,res)=>{
             portfolioLink: userProfile.portfolioLink
           });
         }
-      }
-    });
+    }
+  });
 
     return res.status(200).json(new ApiResponse(200, {
       forYou: usersToLearn,

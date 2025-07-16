@@ -86,9 +86,9 @@ export const manualLogin = asyncHandler(async (req, res) => {
   }
 
   try {
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    return res.status(401).json(new ApiResponse(401, null, "Invalid email or password"));
     }
   } catch (error) {
     console.error("Password comparison error:", error);

@@ -8,7 +8,7 @@ import AboutUs from '@/pages/AboutUs.jsx';
 import Login from './pages/Login.jsx';
 import { ToastContainer } from "react-toastify";
 import { UserContextProvider } from '@/util/userContext';
-import { Route, Routes } from 'react-router-dom';
+import { Route, Routes, useParams } from 'react-router-dom';
 import LandingPage from '@/pages/LandingPage.jsx';
 import Register from './pages/Register/Register.jsx';
 import NotFound from './pages/NotFound.jsx';
@@ -29,6 +29,7 @@ function App() {
         <Route element={<PrivateRoutes />}>
           <Route path="/chats" element={<Chats />} />
           <Route path="/edit-profile" element={<EditProfile />} />
+          <Route path="/messages/:username" element={<Chats />} />
         </Route>
         
          <Route path="/about_us" element={<AboutUs />} />

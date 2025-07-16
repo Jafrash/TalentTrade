@@ -78,14 +78,14 @@ const UserProfileDropdown = ({ user }) => {
 const NavbarLink = ({ href, children, color = "text-gray-800", className = "", onClick }) => {
   const navigate = useNavigate();
   return (
-    <Button 
-      variant="ghost" 
+  <Button 
+    variant="ghost" 
       onClick={onClick || (() => navigate(href))}
-      className={`font-medium hover:bg-emerald-50 ${color} ${className}`}
-    >
-      {children}
-    </Button>
-  );
+    className={`font-medium hover:bg-emerald-50 ${color} ${className}`}
+  >
+    {children}
+  </Button>
+);
 };
 
 const Header = () => {

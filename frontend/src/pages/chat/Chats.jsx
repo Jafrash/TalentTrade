@@ -1,10 +1,10 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import axios from "../../util/axiosConfig"
 import { toast } from "react-toastify"
-import { useUser } from "../../util/UserContext"
+import { useUser } from '../../util/userContext';
 import io from "socket.io-client"
 import RequestCard from "./RequestCard"
 
@@ -21,6 +21,7 @@ import { Loader2, Send } from "lucide-react"
 
 var socket
 const Chats = () => {
+  const { username: userId } = useParams(); // userId is now the param
   const [showChatHistory, setShowChatHistory] = useState(true)
   const [showRequests, setShowRequests] = useState(null)
   const [requests, setRequests] = useState([])
@@ -93,6 +94,39 @@ const Chats = () => {
     };
   }, [user, selectedChat]);
 
+  // Open chat with username if provided in URL
+  useEffect(() => {
+    if (userId) {
+      console.log('[Chats] useParams userId:', userId);
+      if (chats.length > 0) {
+        const chat = chats.find(c => c.id === userId || c.userId === userId);
+        if (chat) {
+          handleChatClick(chat.id);
+        } else {
+          createChatWithUser(userId);
+        }
+      } else {
+        // If chats are not loaded yet, create the chat directly
+        createChatWithUser(userId);
+      }
+    }
+    // eslint-disable-next-line
+  }, [userId, chats]);
+
+  const createChatWithUser = async (userId) => {
+    console.log('[Chats] createChatWithUser userId:', userId);
+    try {
+      const { data } = await axios.post("/chat", { users: [userId] }, { withCredentials: true });
+      if (data.success && data.data) {
+        await fetchChats();
+        const chat = data.data;
+        handleChatClick(chat._id);
+      }
+    } catch (err) {
+      toast.error("Could not start chat with user");
+    }
+  };
+
   const fetchChats = async () => {
     try {
       setChatLoading(true)
@@ -103,15 +137,20 @@ const Chats = () => {
       if (data.success) {
         toast.success(data.message)
         const tempUser = JSON.parse(localStorage.getItem("userInfo"))
-        const temp = data.data.map((chat) => {
-          return {
-            id: chat._id,
-            name: chat?.users.find((u) => u?._id !== tempUser?._id).name,
-            picture: chat?.users.find((u) => u?._id !== tempUser?._id).picture,
-            username: chat?.users.find((u) => u?._id !== tempUser?._id).username,
-          }
-        })
-        setChats(temp)
+        if (Array.isArray(data.data)) {
+          const temp = data.data.map((chat) => {
+            return {
+              id: chat._id,
+              name: chat?.users.find((u) => u?._id !== tempUser?._id).name,
+              picture: chat?.users.find((u) => u?._id !== tempUser?._id).picture,
+              username: chat?.users.find((u) => u?._id !== tempUser?._id).username,
+            }
+          })
+          setChats(temp)
+        } else {
+          console.error("Expected array for data.data, got:", data.data)
+          setChats([])
+        }
       }
       // console.log(temp);
     } catch (err) {

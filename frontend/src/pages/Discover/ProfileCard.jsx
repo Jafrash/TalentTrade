@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { MessageSquare } from "lucide-react";
 
-const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) => {
+const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username, userId }) => {
   const navigate = useNavigate();
   
   const handleProfileClick = () => {
@@ -21,7 +21,8 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
 
   const handleMessageClick = (e) => {
     e.stopPropagation();
-    navigate(`/messages/${username}`);
+    console.log('[ProfileCard] Message button userId:', userId);
+    navigate(`/messages/${userId}`);
   };
 
   // Get initials for avatar fallback

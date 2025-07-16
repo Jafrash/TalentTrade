@@ -256,8 +256,8 @@ const ProfileSetup = () => {
         // If institution and degree are provided, validate dates
         if (edu.startDate && edu.endDate && new Date(edu.startDate) > new Date(edu.endDate)) {
           toast.error("Start date cannot be after end date");
-          return false;
-        }
+      return false;
+    }
       }
     }
 
@@ -267,15 +267,15 @@ const ProfileSetup = () => {
         // If project title is provided, validate dates
         if (project.startDate && project.endDate && new Date(project.startDate) > new Date(project.endDate)) {
           toast.error("Project start date cannot be after end date");
-          return false;
-        }
+        return false;
+      }
         
         // Validate project link format if provided
         if (project.projectLink && !project.projectLink.match(/^(http|https):\/\/[^ "']+$/)) {
-          toast.error("Please provide valid project link");
-          return false;
-        }
+        toast.error("Please provide valid project link");
+        return false;
       }
+    }
     }
 
     console.log('Form validation passed');

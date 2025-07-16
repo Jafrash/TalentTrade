@@ -23,11 +23,25 @@ import { Input } from "@/components/ui/input";
 import SearchComponent from "./Search.jsx";
 
 // Enhanced Profile Card Component
-const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) => {
+const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username, userId }) => {
   const navigate = useNavigate();
-  
+  const { user } = useUser();
+
+  useEffect(() => {
+    console.log("[ProfileCard] Current user in context:", user);
+    console.log("[ProfileCard] userInfo in localStorage:", localStorage.getItem("userInfo"));
+  }, [user]);
+
   const handleProfileClick = () => {
     navigate(`/profile/${username}`);
+  };
+
+  const handleMessageClick = (e) => {
+    e.stopPropagation();
+    console.log(`[ProfileCard] Message button clicked for username: ${username}`);
+    console.log("[ProfileCard] Current user in context:", user);
+    console.log("[ProfileCard] userInfo in localStorage:", localStorage.getItem("userInfo"));
+    navigate(`/messages/${username}`);
   };
 
   // Get initials for avatar fallback
@@ -87,13 +101,22 @@ const ProfileCard = ({ profileImageUrl, name, rating, bio, skills, username }) =
           )}
         </div>
       </CardContent>
-      <CardFooter>
+      <CardFooter className="flex gap-2">
         <Button 
-          className="w-full bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 shadow-md hover:shadow-lg"
+          className="flex-1 bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white transition-all duration-300 shadow-md hover:shadow-lg"
           onClick={handleProfileClick}
         >
           View Profile
         </Button>
+        {user?.username !== username && (
+          <Button 
+            variant="outline" 
+            className="flex-1 border-green-200 dark:border-green-700 text-green-700 dark:text-green-300 hover:bg-green-100 dark:hover:bg-green-900"
+            onClick={handleMessageClick}
+          >
+            Message
+          </Button>
+        )}
       </CardFooter>
     </Card>
   );
@@ -230,6 +253,7 @@ const Discover = () => {
             bio={user?.bio}
             skills={user?.skillsProficientAt}
             username={user?.username}
+            userId={user?._id}
           />
         ))}
       </div>
